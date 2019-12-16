@@ -1,0 +1,125 @@
+---
+PREINSTALLPACKAGES:
+  - aria2
+  - apache2-utils
+  - curl
+  - dialog
+  - figlet
+  - grc
+  - libcrack2
+  - libpq-dev
+  - lsb-release
+  - netselect-apt
+  - net-tools
+  - software-properties-common
+  - toilet
+  - wget
+  - fuse
+INSTALLPACKAGES:
+  - aria2
+  - apache2-utils
+  - apparmor
+  - apt-transport-https
+  - aufs-tools
+  - bash-completion
+  - build-essential
+  - ca-certificates
+  - cgroupfs-mount
+  - cockpit
+  - cockpit-docker
+  - console-setup
+  - console-setup-linux
+  - curl
+  - debconf-utils
+  - dialog
+  - dnsutils
+  - docker.io
+  - docker-compose
+  - dstat
+  - ethtool
+  - fail2ban
+  - figlet
+  - genisoimage
+  - git
+  - glances
+  - grc
+  - haveged
+  - html2text
+  - htop
+  - iptables
+  - iw
+  - jq
+  - kbd
+  - libcrack2
+  - libltdl7
+  - man
+  - mosh
+  - multitail
+  - netselect-apt
+  - net-tools
+  - npm
+  - ntp
+  - openssh-server
+  - openssl
+  - pass
+  - prips
+  - software-properties-common
+  - syslinux
+  - psmisc
+  - pv
+  - python3-pip
+  - toilet
+  - unattended-upgrades
+  - unzip
+  - vim
+  - wget
+  - wireless-tools
+  - wpasupplicant
+
+PYTHONPACKAGES:
+  - docker
+  - yq
+
+SHELLCHECK: '[[ $- == *i* ]] || return'
+ROOTPROMPT: 'PS1="\[\033[38;5;8m\][\[$(tput sgr0)\]\[\033[38;5;1m\]\u\[$(tput sgr0)\]\[\033[38;5;6m\]@\[$(tput sgr0)\]\[\033[38;5;4m\]\h\[$(tput sgr0)\]\[\033[38;5;6m\]:\[$(tput sgr0)\]\[\033[38;5;5m\]\w\[$(tput sgr0)\]\[\033[38;5;8m\]]\[$(tput sgr0)\]\[\033[38;5;1m\]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"'
+USERPROMPT: 'PS1="\[\033[38;5;8m\][\[$(tput sgr0)\]\[\033[38;5;2m\]\u\[$(tput sgr0)\]\[\033[38;5;6m\]@\[$(tput sgr0)\]\[\033[38;5;4m\]\h\[$(tput sgr0)\]\[\033[38;5;6m\]:\[$(tput sgr0)\]\[\033[38;5;5m\]\w\[$(tput sgr0)\]\[\033[38;5;8m\]]\[$(tput sgr0)\]\[\033[38;5;2m\]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"'
+ROOTCOLORS: "export LS_OPTIONS='--color=auto'"
+
+DIRECTORYLIST:
+  - /data/adbhoney/downloads
+  - /data/adbhoney/log
+  - /data/ciscoasa/log
+  - /data/conpot/log
+  - /data/cowrie/log/tty/
+  - /data/cowrie/downloads/
+  - /data/cowrie/keys/
+  - /data/cowrie/misc/
+  - /data/dionaea/log
+  - /data/dionaea/bistreams
+  - /data/dionaea/binaries
+  - /data/dionaea/rtp
+  - /data/dionaea/roots/ftp
+  - /data/dionaea/roots/tftp
+  - /data/dionaea/roots/www
+  - /data/dionaea/roots/upnp
+  - /data/elasticpot/log
+  - /data/elk/data
+  - /data/elk/log
+  - /data/fatt/log
+  - /data/honeytrap/log/
+  - /data/honeytrap/attacks/
+  - /data/honeytrap/downloads/
+  - /data/glutton/log
+  - /data/heralding/log
+  - /data/honeypy/log
+  - /data/mailoney/log
+  - /data/medpot/log
+  - /data/nginx/log
+  - /data/emobility/log
+  - /data/ews/conf
+  - /data/rdpy/log
+  - /data/spiderfoot
+  - /data/suricata/log
+  - /data/tanner/log
+  - /data/tanner/files
+  - /data/p0f/log

@@ -1,0 +1,18 @@
+---
+sudo: required
+dist: xenial
+language: python
+python: 3.6
+env:
+  matrix:
+    - MOLECULE_DISTRO: debian9
+    - MOLECULE_DISTRO: debian10
+
+install:
+  - pip3 install ansible molecule
+  - ansible --version
+  - molecule --version
+script:
+  - molecule create
+  - molecule prepare
+  - molecule test

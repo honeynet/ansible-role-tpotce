@@ -1,0 +1,5 @@
+---
+- name: Copy over fail2ban file
+  copy:
+    src: fail2ban/tpot.conf
+    dest: /etc/fail2ban/jail.d/tpot.conf

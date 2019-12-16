@@ -1,0 +1,17 @@
+---
+- name: Make T-Pot group
+  group:
+    name: tpot
+    gid: 2000
+    state: present
+
+- name: Make T-Pot user
+  user:
+    name: tpot
+    uid: 2000
+    group: tpot
+    state: present
+    create_home: no
+    system: yes
+    shell: /usr/sbin/nologin
+    password: '*'

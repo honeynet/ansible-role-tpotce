@@ -1,0 +1,46 @@
+---
+- name: Prep system
+  include: prep_system/install_packages.yml
+
+- name: SSH setup
+  include: setup_system/setup_ssh.yml
+
+- name: Clone T-Pot repo
+  include: setup_system/clone_tpot_repo.yml
+
+- name: Make Users
+  include: setup_system/make_tpot_user.yml
+
+- name: Setup cockpit
+  include: setup_system/setup_cockpit.yml
+
+- name: Setup T-Pot
+  include: setup_tpot/setup_tpot_config.yml
+
+- name: Setup APT autoupdate
+  include: setup_system/setup_apt_autoupdate.yml
+
+- name: Setup sysctl
+  include: setup_system/setup_sysctl.yml
+
+- name: Setup fail2ban
+  include: setup_system/setup_fail2ban.yml
+
+- name: Systemd fix
+  include: setup_system/systemd_fix.yml
+
+- name: Setup crontab
+  include: setup_tpot/setup_crontab.yml
+
+- name: Setup Directorys and Permissions
+  include: setup_tpot/setup_directory_files_permissions.yml
+
+- name: Setup grub
+  include: setup_system/setup_grub.yml
+  tags: molecule-notest-docker
+
+- name: Setup console
+  include: setup_system/setup_console.yml
+
+- name: Set new hostname
+  include: setup_tpot/set_hostname.yml

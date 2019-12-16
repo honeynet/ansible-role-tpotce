@@ -1,0 +1,56 @@
+---
+- name: Install Ansible dependencies
+  apt:
+    name: [ 'python3-apt', 'aptitude' ]
+    state: present
+
+- name: Install dependencies
+  apt:
+    name: "{{ PREINSTALLPACKAGES }}"
+    state: present
+    update_cache: yes
+
+- name: Check if apt-fast is installed
+  stat:
+    path: /usr/local/sbin/apt-fast
+  register: aptfast_result
+
+- name: Install apt-fast
+  include: install_apt-fast.yml
+  when: aptfast_result.stat.exists == False
+
+- name: Upgrade to Debian Sid
+  include: upgrade_to_sid.yml
+
+- name: Install T-Pot dependencies
+  apt:
+    name: "{{ INSTALLPACKAGES }}"
+    state: present
+    update_cache: yes
+
+- name: Remove unneeded packegs
+  apt:
+    name: ['exim4-base', 'mailutils', 'python-configparser']
+    state: absent
+
+- name: Autoremove packages
+  apt:
+    autoremove: yes
+
+- name: Hold exim4 state
+  command: apt-mark hold exim4-base
+  register: hold_result
+  changed_when:
+    - '"exim4-base set on hold" in hold_result.stdout'
+
+- name: Hold mailutils state
+  command: "apt-mark hold mailutils"
+  register: hold_result
+  changed_when:
+    - '"mailutils set on hold" in hold_result.stdout'
+
+- name: Install needed python module
+  pip:
+    name: "{{ PYTHONPACKAGES }}"
+    executable: pip3
+    state: present

@@ -1,0 +1,16 @@
+---
+- name: Download apt-fast installer script
+  get_url:
+    url: https://raw.githubusercontent.com/ilikenwf/apt-fast/master/quick-install.sh
+    dest: /tmp/
+    mode: '0755'
+
+- name: Install apt-fast
+  shell: /tmp/quick-install.sh
+  args:
+    creates: /usr/local/sbin/apt-fast
+
+- name: Remove apt-fast installer script
+  file:
+    path: /tmp/quick-install.sh
+    state: absent

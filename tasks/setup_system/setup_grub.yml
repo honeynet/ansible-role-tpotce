@@ -1,0 +1,16 @@
+---
+- name: Set Grub default
+  lineinfile:
+    dest: "/etc/default/grub"
+    regexp: 'GRUB_CMDLINE_LINUX_DEFAULT='
+    line: 'GRUB_CMDLINE_LINUX_DEFAULT="quiet consoleblank=0"'
+
+- name: Set Grub settings
+  lineinfile:
+    dest: "/etc/default/grub"
+    regexp: 'GRUB_CMDLINE_LINUX='
+    line: 'GRUB_CMDLINE_LINUX="cgroup_enable=memory swapaccount=1"'
+
+- name: Update Grub
+  shell: "update-grub"
+  changed_when: false

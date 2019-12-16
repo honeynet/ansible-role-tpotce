@@ -1,0 +1,45 @@
+---
+- name: Add Sid sources
+  copy:
+    src: apt/sid.list
+    dest: /etc/apt/sources.list.d/sid.list
+
+- name: Set debconf for Docker
+  debconf:
+    name: docker.io
+    question: docker.io/restart
+    value: 'true'
+    vtype: boolean
+
+- name: Set debconf for debconf
+  debconf:
+    name: debconf
+    question: debconf/frontend
+    value: 'noninteractive'
+    vtype: select
+  tags: molecule-idempotence-notest
+
+- name: Check if cloud-init is installed
+  stat:
+    path: /etc/cloud/cloud.cfg
+  register: cloudinit_result
+
+- name: Set cloud-init to keep hostname
+  lineinfile:
+    dest: "/etc/cloud/cloud.cfg"
+    regexp: "preserve_hostname"
+    line: "preserve_hostname: true"
+  when: cloudinit_result.stat.exists == True
+
+- name: Hold cloud-init version
+  dpkg_selections:
+    name: cloud-init
+    selection: hold
+  when: cloudinit_result.stat.exists == True
+
+- name: Upgrade to Sid
+  apt:
+    update_cache: yes
+    upgrade: dist
+    dpkg_options: 'force-confold,force-confdef'
+    force: yes

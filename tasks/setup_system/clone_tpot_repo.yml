@@ -1,0 +1,13 @@
+---
+- name: Clone T-Pot repo
+  git:
+    repo: https://github.com/dtag-dev-sec/tpotce
+    dest: /opt/tpot
+    update: no
+    force: yes
+    version: master
+
+- name: Copy over replacement logrotate.conf
+  template:
+    src: logrotate/logrotate.conf.j2
+    dest: /opt/tpot/etc/logrotate/logrotate.conf

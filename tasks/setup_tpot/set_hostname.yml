@@ -1,0 +1,46 @@
+---
+- name: Check if hostanme has already been set
+  stat:
+    path: /opt/tpot/etc/compose/elk_environment
+  register: hostnamecheck_result
+
+- name: Make a random hostname
+  shell: |
+    function fuRANDOMWORD {
+    local myWORDFILE="$1"
+    local myLINES=$(cat $myWORDFILE | wc -l)
+    local myRANDOM=$((RANDOM % $myLINES))
+    local myNUM=$((myRANDOM * myRANDOM % $myLINES + 1))
+    echo -n $(sed -n "$myNUM p" $myWORDFILE | tr -d \' | tr A-Z a-z)
+    }
+    a=$(fuRANDOMWORD /opt/tpot/host/usr/share/dict/a.txt)
+    n=$(fuRANDOMWORD /opt/tpot/host/usr/share/dict/n.txt)
+    myHOST=$a$n
+    echo $myHOST
+  args:
+    executable: /bin/bash
+    creates: /opt/tpot/etc/compose/elk_environment
+  register: hostname_result
+
+# - name:
+#   set_fact:
+#     hostname: "{{ hostname_result.stdout }}"
+
+- name: Set system hostname
+  hostname:
+    name: "{{ hostname_result.stdout }}"
+  when: hostnamecheck_result.stat.exists == False
+  tags: molecule-notest-docker
+
+- name: Update /etc/hosts with new hostname
+  lineinfile:
+    dest: "/etc/hosts"
+    regexp: "127.0.1.1"
+    line: "127.0.1.1 {{ hostname_result.stdout }}"
+  when: hostnamecheck_result.stat.exists == False
+  tags: molecule-notest-docker
+
+- name: Generate IP and hostname environment file
+  shell: /opt/tpot/bin/updateip.sh
+  args:
+    creates: /opt/tpot/etc/compose/elk_environment

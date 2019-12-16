@@ -1,0 +1,45 @@
+---
+- name: Add docker image update to crontab
+  cron:
+    name: "Check if updated images are available and download them"
+    minute: "27"
+    hour: "1"
+    user: root
+    job: "docker-compose -f /opt/tpot/etc/tpot.yml pull"
+    cron_file: /etc/crontab
+
+# - name: Add Elasticsearch curator to crontab
+#   cron:
+#     name: "Delete elasticsearch logstash indices older than 90 days"
+#     minute: "27"
+#     hour: "4"
+#     user: root
+#     job: "curator --config /opt/tpot/etc/curator/curator.yml /opt/tpot/etc/curator/actions.yml"
+#     cron_file: /etc/crontab
+
+- name: Add move dionaea ftp binaries to crontab
+  cron:
+    name: "Uploaded binaries are not supposed to be downloaded"
+    minute: "*/1"
+    user: root
+    job: "mv --backup=numbered /data/dionaea/roots/ftp/* /data/dionaea/binaries/"
+    cron_file: /etc/crontab
+
+- name: Add daily rebook to crontab
+  cron:
+    name: "Daily reboot"
+    minute: "27"
+    hour: "3"
+    user: root
+    job: "systemctl stop tpot && docker stop $(docker ps -aq) || docker rm $(docker ps -aq) || reboot"
+    cron_file: /etc/crontab
+
+- name: Add run systems updates to crontab
+  cron:
+    name: "Check for updated packages every sunday, upgrade and reboot"
+    minute: "27"
+    hour: "16"
+    weekday: "0"
+    user: root
+    job: "apt-fast autoclean -y && apt-fast autoremove -y && apt-fast update -y && apt-fast upgrade -y && sleep 10 && reboot"
+    cron_file: /etc/crontab

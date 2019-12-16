@@ -1,0 +1,28 @@
+---
+- name: Make needed folders
+  file:
+    path: "{{ item }}"
+    state: directory
+    recurse: yes
+  with_items: "{{ DIRECTORYLIST }}"
+
+- name: Set needed permissions for /data
+  file:
+    path: /data
+    state: directory
+    recurse: yes
+    owner: tpot
+    group: tpot
+    mode: 0770
+  tags: molecule-idempotence-notest
+
+- name: Copy systemd file
+  copy:
+    src: /opt/tpot/host/etc/systemd/
+    dest: /etc/systemd/system/
+    remote_src: yes
+
+- name: Enable tpot service
+  systemd:
+    name: tpot
+    enabled: yes

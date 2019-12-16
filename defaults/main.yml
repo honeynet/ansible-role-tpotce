@@ -1,0 +1,18 @@
+---
+honeypot_list:
+  - ciscoasa
+  - adbhoney
+  - conpot
+  - cowrie
+  - dionaea
+  - honeypy
+  - glutton
+  - heralding
+  - mailoney
+  - medpot
+  - p0f
+  - rdpy
+  - suricata
+  - tanner
+  - fatt
+logrotate_days: 30

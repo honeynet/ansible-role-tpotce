@@ -1,0 +1,23 @@
+---
+- name: Copy over tpot composs file
+  template:
+    src: tpot/tpot.yml.j2
+    dest: /opt/tpot/etc/tpot.yml
+
+- name: Make sure docker is running
+  service:
+    name: docker
+    state: started
+
+- name: Get list of docker images to pull
+  shell: |
+    cat /opt/tpot/etc/tpot.yml | grep -v '#' | grep image | cut -d'"' -f2 | uniq
+  register: dockerimage_result
+  changed_when: false
+
+- name: Pull down all docker images
+  docker_image:
+    name: "{{ item }}"
+    source: pull
+    state: present
+  with_items: "{{ dockerimage_result.stdout.split() }}"

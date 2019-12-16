@@ -1,0 +1,5 @@
+---
+- name: Copy over systemd fix
+  copy:
+    src: systemd/99-default.link
+    dest: /etc/systemd/network/99-default.link

@@ -1,0 +1,74 @@
+---
+- name: Check if console files have been installed
+  stat:
+    path: /etc/console-setup/Uni2-Terminus12x6.psf
+  register: consolefile_result
+
+- name: Copy console file
+  copy:
+    src: /usr/share/consolefonts/Uni2-Terminus12x6.psf.gz
+    dest: /etc/console-setup/
+    remote_src: yes
+  when: consolefile_result.stat.exists == False
+
+- name: Unzip console file
+  shell: gunzip Uni2-Terminus12x6.psf.gz
+  args:
+    chdir: /etc/console-setup/
+    creates: /etc/console-setup/Uni2-Terminus12x6.psf
+
+- name: Set Fontface
+  lineinfile:
+    dest: "/etc/default/console-setup"
+    regexp: "FONTFACE="
+    line: 'FONTFACE="Terminus"'
+
+- name: Set Fontsize
+  lineinfile:
+    dest: "/etc/default/console-setup"
+    regexp: "FONTSIZE="
+    line: 'FONTSIZE="12x6"'
+
+- name: Update console
+  shell: "update-initramfs -u"
+  changed_when: false
+  tags: molecule-notest-docker
+
+- name: Update service for console
+  lineinfile:
+    dest: "/etc/systemd/system/multi-user.target.wants/console-setup.service"
+    regexp: "After="
+    line: "After=systemd-tmpfiles-setup.service console-screen.service kbd.service local-fs.target"
+
+- name: Setup prompt for root user
+  blockinfile:
+    path: /root/.bashrc
+    block: |
+      {{ SHELLCHECK }}
+      {{ ROOTPROMPT }}
+      {{ ROOTCOLORS }}
+      PATH="$PATH:/opt/tpot/bin"
+
+- name: Get list of all users on system
+  shell: "getent passwd | awk -F: '{ print $6 }' | grep /home/"
+  register: usernamelist
+  changed_when: false
+
+- name: Make sure home directory exists
+  stat:
+    path: "{{ item }}"
+  register: dir_details
+  with_items: "{{ usernamelist.stdout.split() }}"
+
+- name: Setup prompt for other users
+  blockinfile:
+    path: "{{ item.stat.path }}/.bashrc"
+    create: yes
+    block: |
+      {{ SHELLCHECK }}
+      {{ USERPROMPT }}
+      PATH="$PATH:/opt/tpot/bin"
+  when: item.stat.exists and item.stat.isdir
+  with_items: "{{ dir_details.results }}"
+  loop_control:
+    label: "{{ item.item }}"

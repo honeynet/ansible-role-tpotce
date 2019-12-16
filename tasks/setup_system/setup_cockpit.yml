@@ -1,0 +1,23 @@
+---
+- name: Make cockpit socket directory
+  file:
+    path: "/etc/systemd/system/cockpit.socket.d"
+    state: directory
+    recurse: yes
+
+- name: Copy over cockpit socket config
+  copy:
+    src: cockpit/listen.conf
+    dest: /etc/systemd/system/cockpit.socket.d/listen.conf
+
+- name: Setup cockpit PAM module
+  pamd:
+    name: cockpit
+    type: auth
+    control: required
+    module_path: pam_sepermit.so
+    new_type: auth
+    new_control: requisite
+    new_module_path: pam_succeed_if.so
+    module_arguments: 'uid >= 1000'
+    state: after

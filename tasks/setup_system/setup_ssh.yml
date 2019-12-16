@@ -1,0 +1,12 @@
+---
+- name: SSH roaming off
+  lineinfile:
+    path: /etc/ssh/ssh_config
+    regexp: '^UseRoaming'
+    line: 'UseRoaming no'
+
+- name: Change SSH port
+  lineinfile:
+    dest: "/etc/ssh/sshd_config"
+    regexp: "^Port"
+    line: "Port 64295"
