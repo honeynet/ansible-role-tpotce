@@ -521,7 +521,7 @@ services:
     restart: always
     env_file:
      - /opt/tpot/etc/compose/elk_environment
-    image: "honeynet/filebeat"
+    image: "honeynet/filebeat:{{ filebeat_version }}"
     volumes:
      - /data:/data:ro
      - /opt/filebeat/etc/conf.d:/usr/share/filebeat/conf.d:ro
