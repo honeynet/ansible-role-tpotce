@@ -57,5 +57,5 @@
   register: pip_result
 
 - name: Rehash for yq
-  command: "hash -r"
+  shell: "hash -r"
   when: pip_result.changed
