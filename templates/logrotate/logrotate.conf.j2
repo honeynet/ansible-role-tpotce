@@ -1,18 +1,13 @@
 /data/adbhoney/log/*.json
 /data/adbhoney/log/*.log
-/data/adbhoney/downloads.tgz
 /data/ciscoasa/log/ciscoasa.log
 /data/conpot/log/conpot*.json
 /data/conpot/log/conpot*.log
 /data/cowrie/log/cowrie.json
 /data/cowrie/log/cowrie-textlog.log
 /data/cowrie/log/lastlog.txt
-/data/cowrie/log/ttylogs.tgz
-/data/cowrie/downloads.tgz
 /data/dionaea/log/dionaea.json
 /data/dionaea/log/dionaea.sqlite
-/data/dionaea/bistreams.tgz
-/data/dionaea/binaries.tgz
 /data/dionaea/dionaea-errors.log
 /data/elasticpot/log/elasticpot.log
 /data/elk/log/*.log
@@ -21,11 +16,10 @@
 /data/glutton/log/*.err
 /data/heralding/log/*.log
 /data/heralding/log/*.csv
+/data/heralding/log/*.json
 /data/honeypy/log/*.log
 /data/honeytrap/log/*.log
 /data/honeytrap/log/*.json
-/data/honeytrap/attacks.tgz
-/data/honeytrap/downloads.tgz
 /data/mailoney/log/commands.log
 /data/medpot/log/*.log
 /data/nginx/log/*.log
@@ -35,12 +29,30 @@
 /data/suricata/log/*.json
 /data/tanner/log/*.json
 {
-	    su tpot tpot
+	su tpot tpot
         copytruncate
         create 770 tpot tpot
-	    daily
+	daily
         missingok
         notifempty
-	    rotate {{ logrotate_days }}
-	    compress
+	rotate {{ logrotate_days }}
+	compress
+        compresscmd /usr/bin/pigz
+}
+
+/data/adbhoney/downloads.tgz
+/data/cowrie/log/ttylogs.tgz
+/data/cowrie/downloads.tgz
+/data/dionaea/bistreams.tgz
+/data/dionaea/binaries.tgz
+/data/honeytrap/attacks.tgz
+/data/honeytrap/downloads.tgz
+{
+	su tpot tpot
+        copytruncate
+        create 770 tpot tpot
+	daily
+        missingok
+        notifempty
+	rotate {{ logrotate_days }}
 }
