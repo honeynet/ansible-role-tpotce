@@ -54,3 +54,8 @@
     name: "{{ PYTHONPACKAGES }}"
     executable: pip3
     state: present
+  register: pip_result
+
+- name: Rehash for yq
+  shell: "hash -r"
+  when: pip_result.changed

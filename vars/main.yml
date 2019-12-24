@@ -62,6 +62,7 @@ INSTALLPACKAGES:
   - openssh-server
   - openssl
   - pass
+  - pigz
   - prips
   - software-properties-common
   - syslinux
