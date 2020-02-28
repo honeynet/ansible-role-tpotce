@@ -24,8 +24,6 @@ provisioner:
         ansible_python_interpreter: /usr/bin/python3
 verifier:
   name: testinfra
-  lint:
-    name: flake8
 scenario:
   name: default
   test_sequence:
