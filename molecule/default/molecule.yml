@@ -3,8 +3,9 @@ dependency:
   name: galaxy
 driver:
   name: docker
-lint:
-  name: yamllint
+lint: |   
+  yamllint .
+  ansible-lint
 platforms:
   - name: instance
     image: "honeynet/docker-${MOLECULE_DISTRO:-debian9}-ansible-python3:latest"
@@ -15,8 +16,6 @@ platforms:
     pre_build_image: true
 provisioner:
   name: ansible
-  lint:
-    name: ansible-lint
   ansible_args:
     - --skip-tags=molecule-notest-docker
   inventory:
