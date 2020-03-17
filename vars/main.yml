@@ -2,9 +2,11 @@
 PREINSTALLPACKAGES:
   - aria2
   - apache2-utils
+  - cracklib-runtime
   - curl
   - dialog
   - figlet
+  - fuse
   - grc
   - libcrack2
   - libpq-dev
@@ -14,7 +16,6 @@ PREINSTALLPACKAGES:
   - software-properties-common
   - toilet
   - wget
-  - fuse
 INSTALLPACKAGES:
   - aria2
   - apache2-utils
@@ -26,16 +27,16 @@ INSTALLPACKAGES:
   - ca-certificates
   - cgroupfs-mount
   - cockpit
-  - cockpit-docker
   - console-setup
   - console-setup-linux
+  - cracklib-runtime
   - curl
   - debconf-utils
   - dialog
   - dnsutils
   - docker.io
   - docker-compose
-  - dstat
+  - elasticsearch-curator
   - ethtool
   - fail2ban
   - figlet
@@ -52,6 +53,7 @@ INSTALLPACKAGES:
   - kbd
   - libcrack2
   - libltdl7
+  - libpam-google-authenticator
   - man
   - mosh
   - multitail
@@ -90,6 +92,7 @@ DIRECTORYLIST:
   - /data/adbhoney/downloads
   - /data/adbhoney/log
   - /data/ciscoasa/log
+  - /data/citrixhoneypot/logs
   - /data/conpot/log
   - /data/cowrie/log/tty/
   - /data/cowrie/downloads/
@@ -116,6 +119,7 @@ DIRECTORYLIST:
   - /data/mailoney/log
   - /data/medpot/log
   - /data/nginx/log
+  - /data/nginx/heimdall
   - /data/emobility/log
   - /data/ews/conf
   - /data/rdpy/log

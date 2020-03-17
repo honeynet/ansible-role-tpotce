@@ -4,7 +4,6 @@ language: python
 python: 3.6
 env:
   matrix:
-    - MOLECULE_DISTRO: debian9
     - MOLECULE_DISTRO: debian10
 
 install:
