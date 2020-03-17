@@ -1,0 +1,3 @@
+ansible==2.9.6
+'molecule[docker]'==3.0.2
+ansible-lint==4.2.0
