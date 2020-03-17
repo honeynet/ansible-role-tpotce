@@ -9,7 +9,7 @@ lint:
   name: yamllint
 platforms:
   - name: instance
-    box: debian/stretch64
+    box: debian/buster64
     memory: 2048
 provisioner:
   name: ansible
