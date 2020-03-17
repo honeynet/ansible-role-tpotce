@@ -30,7 +30,7 @@
 
 - name: Remove unneeded packegs
   apt:
-    name: ['exim4-base', 'mailutils', 'python-configparser']
+    name: ['exim4-base', 'mailutils', 'python-configparser', 'pcp', 'cockpit-pcp']
     state: absent
 
 - name: Autoremove packages
@@ -48,6 +48,18 @@
   register: hold_result
   changed_when:
     - '"mailutils set on hold" in hold_result.stdout'
+
+- name: Hold pcp state
+  command: "apt-mark hold pcp"
+  register: hold_result
+  changed_when:
+    - '"pcp set on hold" in hold_result.stdout'
+
+- name: Hold cockpit-pcp state
+  command: "apt-mark hold cockpit-pcp"
+  register: hold_result
+  changed_when:
+    - '"cockpit-pcp set on hold" in hold_result.stdout'
 
 - name: Install needed python module
   pip:
