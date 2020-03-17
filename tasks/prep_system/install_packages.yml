@@ -59,7 +59,7 @@
   command: "apt-mark hold cockpit-pcp"
   register: hold_result_cockpit_pcp
   changed_when:
-    - '"cockpit-pcp set on hold" in hold_result_cockpit_pcp".stdout'
+    - '"cockpit-pcp set on hold" in hold_result_cockpit_pcp.stdout'
 
 - name: Install needed python module
   pip:
