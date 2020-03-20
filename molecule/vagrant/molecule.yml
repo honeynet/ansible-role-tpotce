@@ -5,28 +5,28 @@ driver:
   name: vagrant
   provider:
     name: virtualbox
-# lint:
-#   name: yamllint
+lint:
+  name: yamllint
 platforms:
   - name: instance
-    box: debian/buster64
+    box: debian/stretch64
     memory: 2048
 provisioner:
   name: ansible
-  # lint:
-  #   name: ansible-lint
+  lint:
+    name: ansible-lint
   inventory:
     host_vars:
       instance:
         ansible_python_interpreter: /usr/bin/python3
 verifier:
   name: testinfra
-  # lint:
-  #   name: flake8
+  lint:
+    name: flake8
 scenario:
   name: vagrant
   test_sequence:
-    # - lint
+    - lint
     - destroy
     # - dependency
     - syntax
