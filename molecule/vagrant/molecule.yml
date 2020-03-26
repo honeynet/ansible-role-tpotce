@@ -10,7 +10,7 @@ lint: |
   ansible-lint
 platforms:
   - name: instance
-    box: generic/debian10
+    box: debian/buster64
     memory: 2048
 provisioner:
   name: ansible
