@@ -37,26 +37,26 @@
   apt:
     autoremove: yes
 
-# - name: Hold exim4 state
-#   shell: apt-mark hold exim4-base
-#   register: hold_result_exim4
-#   changed_when:
-#     - '"exim4-base set on hold" in hold_result_exim4.stdout'
+- name: Hold exim4 state
+  command: apt-mark hold exim4-base
+  register: hold_result_exim4
+  changed_when:
+    - '"exim4-base set on hold" in hold_result_exim4.stdout'
 
 - name: Hold mailutils state
-  shell: "apt-mark hold mailutils"
+  command: apt-mark hold mailutils
   register: hold_result_mailutils
   changed_when:
     - '"mailutils set on hold" in hold_result_mailutils.stdout'
 
 - name: Hold pcp state
-  shell: "apt-mark hold pcp"
+  command: apt-mark hold pcp
   register: hold_result_pcp
   changed_when:
     - '"pcp set on hold" in hold_result_pcp.stdout'
 
 - name: Hold cockpit-pcp state
-  shell: "apt-mark hold cockpit-pcp"
+  command: apt-mark hold cockpit-pcp
   register: hold_result_cockpit_pcp
   changed_when:
     - '"cockpit-pcp set on hold" in hold_result_cockpit_pcp.stdout'
