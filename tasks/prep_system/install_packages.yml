@@ -37,11 +37,11 @@
   apt:
     autoremove: yes
 
-- name: Hold exim4 state
-  shell: apt-mark hold exim4-base
-  register: hold_result_exim4
-  changed_when:
-    - '"exim4-base set on hold" in hold_result_exim4.stdout'
+# - name: Hold exim4 state
+#   shell: apt-mark hold exim4-base
+#   register: hold_result_exim4
+#   changed_when:
+#     - '"exim4-base set on hold" in hold_result_exim4.stdout'
 
 - name: Hold mailutils state
   shell: "apt-mark hold mailutils"
