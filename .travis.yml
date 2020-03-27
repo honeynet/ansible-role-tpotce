@@ -13,4 +13,4 @@ install:
 script:
   - molecule create
   - molecule prepare
-  - molecule --debug test
+  - molecule test
