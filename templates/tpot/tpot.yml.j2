@@ -221,7 +221,7 @@ services:
      - "135:135"
 {% if "citrixhoneypot" in honeypot_list -%}
     #  - "443:443"
-{%- else %}
+{% else %}
      - "443:443"
 {%- endif %}
      - "445:445"
