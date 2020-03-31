@@ -6,6 +6,9 @@ networks:
 {% if "adbhoney" in honeypot_list %}
   adbhoney_local:
 {% endif %}
+{% if "citrixhoneypot" in honeypot_list %}
+  citrixhoneypot_local:
+{% endif %}
 {% if "conpot" in honeypot_list %}
   conpot_local_IEC104:
   conpot_local_guardian_ast:
@@ -74,6 +77,21 @@ services:
     read_only: true
     volumes:
      - /data/ciscoasa/log:/var/log/ciscoasa
+{% endif %}
+
+{% if "citrixhoneypot" in honeypot_list %}
+# CitrixHoneypot service
+  citrixhoneypot:
+    container_name: citrixhoneypot
+    restart: always
+    networks:
+     - citrixhoneypot_local
+    ports:
+     - "443:443"
+    image: "dtagdevsec/citrixhoneypot:2006"
+    read_only: true
+    volumes:
+     - /data/citrixhoneypot/logs:/opt/citrixhoneypot/logs
 {% endif %}
 
 {% if "conpot" in honeypot_list %}
@@ -201,7 +219,11 @@ services:
      - "69:69/udp"
      - "81:81"
      - "135:135"
+     {% if "citrixhoneypot" in honeypot_list -%}
      - "443:443"
+     {%- else %}
+    #  - "443:443"
+     {%- endif %}
      - "445:445"
      - "1433:1433"
      - "1723:1723"
@@ -265,6 +287,8 @@ services:
     # - "443:443"
      - "993:993"
      - "995:995"
+    # - "3306:3306"
+    # - "3389:3389"
      - "1080:1080"
      - "5432:5432"
      - "5900:5900"
