@@ -219,9 +219,11 @@ services:
      - "69:69/udp"
      - "81:81"
      - "135:135"
-{% if "citrixhoneypot" in honeypot_list -%}
+{% if "citrixhoneypot" in honeypot_list %}
     #  - "443:443"
-{%- endif %}
+{% else %}
+     - "443:443"
+{% endif %}
      - "445:445"
      - "1433:1433"
      - "1723:1723"
