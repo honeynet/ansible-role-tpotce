@@ -17,3 +17,4 @@ honeypot_list:
   - fatt
 logrotate_days: 30
 filebeat_version: "6.5.4"
+tpot_version: "1903"

@@ -42,6 +42,7 @@ You may choose from any of the following:
   - `suricata`
   - `tanner`
   - `fatt`
+  - `citrixhoneypot`
 
 The `glutton` and `honeytrap` honeypots _can't_ be used on the same system.
 

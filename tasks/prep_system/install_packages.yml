@@ -30,7 +30,7 @@
 
 - name: Remove unneeded packegs
   apt:
-    name: ['exim4-base', 'mailutils', 'python-configparser']
+    name: ['exim4-base', 'mailutils', 'python-configparser', 'pcp', 'cockpit-pcp']
     state: absent
 
 - name: Autoremove packages
@@ -39,15 +39,31 @@
 
 - name: Hold exim4 state
   command: apt-mark hold exim4-base
-  register: hold_result
+  register: hold_result_exim4
   changed_when:
-    - '"exim4-base set on hold" in hold_result.stdout'
+    - '"exim4-base set on hold" in hold_result_exim4.stdout'
+  tags: molecule-idempotence-notest
 
 - name: Hold mailutils state
-  command: "apt-mark hold mailutils"
-  register: hold_result
+  command: apt-mark hold mailutils
+  register: hold_result_mailutils
   changed_when:
-    - '"mailutils set on hold" in hold_result.stdout'
+    - '"mailutils set on hold" in hold_result_mailutils.stdout'
+  tags: molecule-idempotence-notest
+
+- name: Hold pcp state
+  command: apt-mark hold pcp
+  register: hold_result_pcp
+  changed_when:
+    - '"pcp set on hold" in hold_result_pcp.stdout'
+  tags: molecule-idempotence-notest
+
+- name: Hold cockpit-pcp state
+  command: apt-mark hold cockpit-pcp
+  register: hold_result_cockpit_pcp
+  changed_when:
+    - '"cockpit-pcp set on hold" in hold_result_cockpit_pcp.stdout'
+  tags: molecule-idempotence-notest
 
 - name: Install needed python module
   pip:
