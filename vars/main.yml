@@ -36,7 +36,6 @@ INSTALLPACKAGES:
   - dnsutils
   - docker.io
   - docker-compose
-  - elasticsearch-curator
   - ethtool
   - fail2ban
   - figlet
@@ -82,6 +81,7 @@ INSTALLPACKAGES:
 PYTHONPACKAGES:
   - docker
   - yq
+  - elasticsearch-curator
 
 SHELLCHECK: '[[ $- == *i* ]] || return'
 ROOTPROMPT: 'PS1="\[\033[38;5;8m\][\[$(tput sgr0)\]\[\033[38;5;1m\]\u\[$(tput sgr0)\]\[\033[38;5;6m\]@\[$(tput sgr0)\]\[\033[38;5;4m\]\h\[$(tput sgr0)\]\[\033[38;5;6m\]:\[$(tput sgr0)\]\[\033[38;5;5m\]\w\[$(tput sgr0)\]\[\033[38;5;8m\]]\[$(tput sgr0)\]\[\033[38;5;1m\]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"'
@@ -92,12 +92,12 @@ DIRECTORYLIST:
   - /data/adbhoney/downloads
   - /data/adbhoney/log
   - /data/ciscoasa/log
-  - /data/citrixhoneypot/logs
   - /data/conpot/log
-  - /data/cowrie/log/tty/
+  - /data/citrixhoneypot/logs
   - /data/cowrie/downloads/
   - /data/cowrie/keys/
   - /data/cowrie/misc/
+  - /data/cowrie/log/tty/
   - /data/dionaea/log
   - /data/dionaea/bistreams
   - /data/dionaea/binaries
