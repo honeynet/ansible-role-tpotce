@@ -70,7 +70,6 @@
   register: hold_result_elasticsearch_curator
   changed_when:
     - '"elasticsearch-curator set on hold" in hold_result_elasticsearch_curator.stdout'
-  # tags: molecule-idempotence-notest
 
 - name: Install needed python module
   pip:
