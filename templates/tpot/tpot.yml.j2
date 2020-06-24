@@ -18,11 +18,20 @@ networks:
 {% if "cowrie" in honeypot_list %}
   cowrie_local:
 {% endif %}
+{% if "dicompot" in honeypot_list %}
+  dicompot_local
+{% endif %}
+{% if "elasticpot" in honeypot_list %}
+  elasticpot_local:
+{% endif %}
 {% if "heralding" in honeypot_list %}
   heralding_local:
 {% endif %}
 {% if "honeypy" in honeypot_list %}
   honeypy_local:
+{% endif %}
+{% if "honeysap" in honeypot_list %}
+  honeysap_local:
 {% endif %}
 {% if "mailoney" in honeypot_list %}
   mailoney_local:
@@ -204,6 +213,21 @@ services:
      - /data/cowrie/log/tty:/home/cowrie/cowrie/log/tty
 {% endif %}
 
+{% if "dicompot" in honeypot_list %}
+# Dicompot service
+  dicompot:
+    container_name: dicompot
+    restart: always
+    networks:
+     - dicompot_local
+    ports:
+     - "11112:11112"
+    image: "dtagdevsec/dicompot:{{ tpot_version }}"
+    read_only: true
+    volumes:
+     - /data/dicompot/log:/var/log/dicompot
+{% endif %}
+
 {% if "dionaea" in honeypot_list %}
 # Dionaea service
   dionaea:
@@ -246,25 +270,37 @@ services:
      - /data/dionaea/rtp:/opt/dionaea/var/dionaea/rtp
 {% endif %}
 
-{% if "honeypy" in honeypot_list %}
-# HoneyPy service
-  honeypy:
-    container_name: honeypy
+{% if "elasticpot" in honeypot_list %}
+# ElasticPot service
+  elasticpot:
+    container_name: elasticpot
     restart: always
     networks:
-     - honeypy_local
+     - elasticpot_local
     ports:
-     - "7:7"
-     - "8:8"
-     - "2048:2048"
-     - "2323:2323"
-     - "2324:2324"
-     - "4096:4096"
      - "9200:9200"
-    image: "dtagdevsec/honeypy:{{ tpot_version }}"
+    image: "dtagdevsec/elasticpot:2006"
     read_only: true
     volumes:
-     - /data/honeypy/log:/opt/honeypy/log
+     - /data/elasticpot/log:/opt/elasticpot/log
+{% endif %}
+
+{% if "glutton" in honeypot_list %}
+# Glutton service
+  glutton:
+    container_name: glutton
+    restart: always
+    tmpfs:
+     - /var/lib/glutton:uid=2000,gid=2000
+     - /run:uid=2000,gid=2000
+    network_mode: "host"
+    cap_add:
+     - NET_ADMIN
+    image: "dtagdevsec/glutton:{{ tpot_version }}"
+    read_only: true
+    volumes:
+     - /data/glutton/log:/var/log/glutton
+#     - /root/tpotce/docker/glutton/dist/rules.yaml:/opt/glutton/rules/rules.yaml
 {% endif %}
 
 {% if "heralding" in honeypot_list %}
@@ -298,22 +334,39 @@ services:
      - /data/heralding/log:/var/log/heralding
 {% endif %}
 
-{% if "glutton" in honeypot_list %}
-# Glutton service
-  glutton:
-    container_name: glutton
+{% if "honeypy" in honeypot_list %}
+# HoneyPy service
+  honeypy:
+    container_name: honeypy
     restart: always
-    tmpfs:
-     - /var/lib/glutton:uid=2000,gid=2000
-     - /run:uid=2000,gid=2000
-    network_mode: "host"
-    cap_add:
-     - NET_ADMIN
-    image: "dtagdevsec/glutton:{{ tpot_version }}"
+    networks:
+     - honeypy_local
+    ports:
+     - "7:7"
+     - "8:8"
+     - "2048:2048"
+     - "2323:2323"
+     - "2324:2324"
+     - "4096:4096"
+    #  - "9200:9200"
+    image: "dtagdevsec/honeypy:{{ tpot_version }}"
     read_only: true
     volumes:
-     - /data/glutton/log:/var/log/glutton
-#     - /root/tpotce/docker/glutton/dist/rules.yaml:/opt/glutton/rules/rules.yaml
+     - /data/honeypy/log:/opt/honeypy/log
+{% endif %}
+
+{% if "honeysap" in honeypot_list %}
+# HoneySAP service
+  honeysap:
+    container_name: honeysap
+    restart: always
+    networks:
+     - honeysap_local
+    ports:
+     - "3299:3299"
+    image: "dtagdevsec/honeysap:2006"
+    volumes:
+     - /data/honeysap/log:/opt/honeysap/log
 {% endif %}
 
 {% if "honeytrap" in honeypot_list %}
@@ -432,22 +485,22 @@ services:
     depends_on:
      - tanner_redis
 
-## Tanner WEB Service
-  tanner_web:
-    container_name: tanner_web
-    restart: always
-    tmpfs:
-     - /tmp/tanner:uid=2000,gid=2000
-    tty: true
-    networks:
-     - tanner_local
-    image: "dtagdevsec/tanner:{{ tpot_version }}"
-    command: tannerweb
-    read_only: true
-    volumes:
-     - /data/tanner/log:/var/log/tanner
-    depends_on:
-     - tanner_redis
+# ## Tanner WEB Service
+#   tanner_web:
+#     container_name: tanner_web
+#     restart: always
+#     tmpfs:
+#      - /tmp/tanner:uid=2000,gid=2000
+#     tty: true
+#     networks:
+#      - tanner_local
+#     image: "dtagdevsec/tanner:{{ tpot_version }}"
+#     command: tannerweb
+#     read_only: true
+#     volumes:
+#      - /data/tanner/log:/var/log/tanner
+#     depends_on:
+#      - tanner_redis
 
 ## Tanner Service
   tanner:
@@ -466,7 +519,7 @@ services:
      - /data/tanner/files:/opt/tanner/files
     depends_on:
      - tanner_api
-     - tanner_web
+    #  - tanner_web
      - tanner_phpox
 
 ## Snare Service

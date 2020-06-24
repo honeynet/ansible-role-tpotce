@@ -30,8 +30,11 @@ You may choose from any of the following:
   - `adbhoney`
   - `conpot`
   - `cowrie`
+  - `dicompot`
   - `dionaea`
+  - `elasticpot`
   - `honeypy`
+  - `honeysap`
   - `glutton`
   - `honeytrap`
   - `heralding`

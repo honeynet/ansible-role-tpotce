@@ -99,6 +99,7 @@ DIRECTORYLIST:
   - /data/cowrie/keys/
   - /data/cowrie/misc/
   - /data/cowrie/log/tty/
+  - /data/dicompot/log
   - /data/dionaea/log
   - /data/dionaea/bistreams
   - /data/dionaea/binaries
@@ -117,6 +118,7 @@ DIRECTORYLIST:
   - /data/glutton/log
   - /data/heralding/log
   - /data/honeypy/log
+  - /data/honeysap/log 
   - /data/mailoney/log
   - /data/medpot/log
   - /data/nginx/log
