@@ -28,6 +28,7 @@ INSTALLPACKAGES:
   - ca-certificates
   - cgroupfs-mount
   - cockpit
+  - cockpit-docker
   - console-setup
   - console-setup-linux
   - cracklib-runtime
@@ -118,7 +119,8 @@ DIRECTORYLIST:
   - /data/glutton/log
   - /data/heralding/log
   - /data/honeypy/log
-  - /data/honeysap/log 
+  - /data/honeysap/log
+  - /data/ipphoney/log
   - /data/mailoney/log
   - /data/medpot/log
   - /data/nginx/log
