@@ -18,11 +18,26 @@ networks:
 {% if "cowrie" in honeypot_list %}
   cowrie_local:
 {% endif %}
+{% if "dicompot" in honeypot_list %}
+  dicompot_local:
+{% endif %}
+{% if "dionaea" in honeypot_list %}
+  dionaea_local:
+{% endif %}
+{% if "elasticpot" in honeypot_list %}
+  elasticpot_local:
+{% endif %}
 {% if "heralding" in honeypot_list %}
   heralding_local:
 {% endif %}
 {% if "honeypy" in honeypot_list %}
   honeypy_local:
+{% endif %}
+{% if "honeysap" in honeypot_list %}
+  honeysap_local:
+{% endif %}
+{% if "ipphoney" in honeypot_list %}
+  ipphoney_local:
 {% endif %}
 {% if "mailoney" in honeypot_list %}
   mailoney_local:
@@ -55,7 +70,7 @@ services:
      - adbhoney_local
     ports:
      - "5555:5555"
-    image: "dtagdevsec/adbhoney:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/adbhoney:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/adbhoney/log:/opt/adbhoney/log
@@ -73,7 +88,7 @@ services:
     ports:
      - "5000:5000/udp"
      - "8443:8443"
-    image: "dtagdevsec/ciscoasa:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/ciscoasa:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/ciscoasa/log:/var/log/ciscoasa
@@ -88,7 +103,7 @@ services:
      - citrixhoneypot_local
     ports:
      - "443:443"
-    image: "dtagdevsec/citrixhoneypot:2006"
+    image: "ghcr.io/telekom-security/citrixhoneypot:2006"
     read_only: true
     volumes:
      - /data/citrixhoneypot/logs:/opt/citrixhoneypot/logs
@@ -112,7 +127,7 @@ services:
     ports:
      - "161:161"
      - "2404:2404"
-    image: "dtagdevsec/conpot:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/conpot:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/conpot/log:/var/log/conpot
@@ -133,7 +148,7 @@ services:
      - conpot_local_guardian_ast
     ports:
      - "10001:10001"
-    image: "dtagdevsec/conpot:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/conpot:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/conpot/log:/var/log/conpot
@@ -154,7 +169,7 @@ services:
      - conpot_local_ipmi
     ports:
      - "623:623"
-    image: "dtagdevsec/conpot:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/conpot:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/conpot/log:/var/log/conpot
@@ -176,7 +191,7 @@ services:
     ports:
      - "1025:1025"
      - "50100:50100"
-    image: "dtagdevsec/conpot:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/conpot:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/conpot/log:/var/log/conpot
@@ -195,13 +210,28 @@ services:
     ports:
      - "22:22"
      - "23:23"
-    image: "dtagdevsec/cowrie:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/cowrie:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/cowrie/downloads:/home/cowrie/cowrie/dl
      - /data/cowrie/keys:/home/cowrie/cowrie/etc
      - /data/cowrie/log:/home/cowrie/cowrie/log
      - /data/cowrie/log/tty:/home/cowrie/cowrie/log/tty
+{% endif %}
+
+{% if "dicompot" in honeypot_list %}
+# Dicompot service
+  dicompot:
+    container_name: dicompot
+    restart: always
+    networks:
+     - dicompot_local
+    ports:
+     - "11112:11112"
+    image: "ghcr.io/telekom-security/dicompot:{{ tpot_version }}"
+    read_only: true
+    volumes:
+     - /data/dicompot/log:/var/log/dicompot
 {% endif %}
 
 {% if "dionaea" in honeypot_list %}
@@ -211,7 +241,8 @@ services:
     stdin_open: true
     tty: true
     restart: always
-    network_mode: "host"
+    networks:
+     - dionaea_local
     ports:
      - "20:20"
      - "21:21"
@@ -233,7 +264,7 @@ services:
      - "5060:5060/udp"
      - "5061:5061"
      - "27017:27017"
-    image: "dtagdevsec/dionaea:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/dionaea:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/dionaea/roots/ftp:/opt/dionaea/var/dionaea/roots/ftp
@@ -246,25 +277,37 @@ services:
      - /data/dionaea/rtp:/opt/dionaea/var/dionaea/rtp
 {% endif %}
 
-{% if "honeypy" in honeypot_list %}
-# HoneyPy service
-  honeypy:
-    container_name: honeypy
+{% if "elasticpot" in honeypot_list %}
+# ElasticPot service
+  elasticpot:
+    container_name: elasticpot
     restart: always
     networks:
-     - honeypy_local
+     - elasticpot_local
     ports:
-     - "7:7"
-     - "8:8"
-     - "2048:2048"
-     - "2323:2323"
-     - "2324:2324"
-     - "4096:4096"
      - "9200:9200"
-    image: "dtagdevsec/honeypy:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/elasticpot:2006"
     read_only: true
     volumes:
-     - /data/honeypy/log:/opt/honeypy/log
+     - /data/elasticpot/log:/opt/elasticpot/log
+{% endif %}
+
+{% if "glutton" in honeypot_list %}
+# Glutton service
+  glutton:
+    container_name: glutton
+    restart: always
+    tmpfs:
+     - /var/lib/glutton:uid=2000,gid=2000
+     - /run:uid=2000,gid=2000
+    network_mode: "host"
+    cap_add:
+     - NET_ADMIN
+    image: "ghcr.io/telekom-security/glutton:{{ tpot_version }}"
+    read_only: true
+    volumes:
+     - /data/glutton/log:/var/log/glutton
+#     - /root/tpotce/docker/glutton/dist/rules.yaml:/opt/glutton/rules/rules.yaml
 {% endif %}
 
 {% if "heralding" in honeypot_list %}
@@ -292,29 +335,61 @@ services:
      - "1080:1080"
      - "5432:5432"
      - "5900:5900"
-    image: "dtagdevsec/heralding:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/heralding:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/heralding/log:/var/log/heralding
 {% endif %}
 
-{% if "glutton" in honeypot_list %}
-# Glutton service
-  glutton:
-    container_name: glutton
+{% if "honeypy" in honeypot_list %}
+# HoneyPy service
+  honeypy:
+    container_name: honeypy
     restart: always
-    tmpfs:
-     - /var/lib/glutton:uid=2000,gid=2000
-     - /run:uid=2000,gid=2000
-    network_mode: "host"
-    cap_add:
-     - NET_ADMIN
-    image: "dtagdevsec/glutton:{{ tpot_version }}"
+    networks:
+     - honeypy_local
+    ports:
+     - "7:7"
+     - "8:8"
+     - "2048:2048"
+     - "2323:2323"
+     - "2324:2324"
+     - "4096:4096"
+    #  - "9200:9200"
+    image: "ghcr.io/telekom-security/honeypy:{{ tpot_version }}"
     read_only: true
     volumes:
-     - /data/glutton/log:/var/log/glutton
-#     - /root/tpotce/docker/glutton/dist/rules.yaml:/opt/glutton/rules/rules.yaml
+     - /data/honeypy/log:/opt/honeypy/log
 {% endif %}
+
+{% if "honeysap" in honeypot_list %}
+# HoneySAP service
+  honeysap:
+    container_name: honeysap
+    restart: always
+    networks:
+     - honeysap_local
+    ports:
+     - "3299:3299"
+    image: "ghcr.io/telekom-security/honeysap:2006"
+    volumes:
+     - /data/honeysap/log:/opt/honeysap/log
+{% endif %}
+
+{% if "honeysap" in honeypot_list %}
+# Ipphoney service
+  ipphoney:
+    container_name: ipphoney
+    restart: always
+    networks:
+     - ipphoney_local
+    ports:
+     - "631:631"
+    image: "ghcr.io/telekom-security/ipphoney:2006"
+    read_only: true
+    volumes:
+     - /data/ipphoney/log:/opt/ipphoney/log
+{% endif %}}
 
 {% if "honeytrap" in honeypot_list %}
 # Honeytrap service
@@ -326,7 +401,7 @@ services:
     network_mode: "host"
     cap_add:
      - NET_ADMIN
-    image: "dtagdevsec/honeytrap:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/honeytrap:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/honeytrap/attacks:/opt/honeytrap/var/attacks
@@ -349,7 +424,7 @@ services:
      - mailoney_local
     ports:
      - "25:25"
-    image: "dtagdevsec/mailoney:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/mailoney:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/mailoney/log:/opt/mailoney/logs
@@ -364,7 +439,7 @@ services:
      - medpot_local
     ports:
      - "2575:2575"
-    image: "dtagdevsec/medpot:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/medpot:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/medpot/log/:/var/log/medpot
@@ -387,7 +462,7 @@ services:
      - rdpy_local
     ports:
      - "3389:3389"
-    image: "dtagdevsec/rdpy:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/rdpy:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/rdpy/log:/var/log/rdpy
@@ -402,7 +477,7 @@ services:
     tty: true
     networks:
      - tanner_local
-    image: "dtagdevsec/redis:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/redis:{{ tpot_version }}"
     read_only: true
 
 ## PHP Sandbox service
@@ -412,7 +487,7 @@ services:
     tty: true
     networks:
      - tanner_local
-    image: "dtagdevsec/phpox:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/phpox:{{ tpot_version }}"
     read_only: true
 
 ## Tanner API Service
@@ -424,7 +499,7 @@ services:
     tty: true
     networks:
      - tanner_local
-    image: "dtagdevsec/tanner:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/tanner:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/tanner/log:/var/log/tanner
@@ -432,22 +507,22 @@ services:
     depends_on:
      - tanner_redis
 
-## Tanner WEB Service
-  tanner_web:
-    container_name: tanner_web
-    restart: always
-    tmpfs:
-     - /tmp/tanner:uid=2000,gid=2000
-    tty: true
-    networks:
-     - tanner_local
-    image: "dtagdevsec/tanner:{{ tpot_version }}"
-    command: tannerweb
-    read_only: true
-    volumes:
-     - /data/tanner/log:/var/log/tanner
-    depends_on:
-     - tanner_redis
+# ## Tanner WEB Service
+#   tanner_web:
+#     container_name: tanner_web
+#     restart: always
+#     tmpfs:
+#      - /tmp/tanner:uid=2000,gid=2000
+#     tty: true
+#     networks:
+#      - tanner_local
+#     image: "ghcr.io/telekom-security/tanner:{{ tpot_version }}"
+#     command: tannerweb
+#     read_only: true
+#     volumes:
+#      - /data/tanner/log:/var/log/tanner
+#     depends_on:
+#      - tanner_redis
 
 ## Tanner Service
   tanner:
@@ -458,7 +533,7 @@ services:
     tty: true
     networks:
      - tanner_local
-    image: "dtagdevsec/tanner:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/tanner:{{ tpot_version }}"
     command: tanner
     read_only: true
     volumes:
@@ -466,7 +541,7 @@ services:
      - /data/tanner/files:/opt/tanner/files
     depends_on:
      - tanner_api
-     - tanner_web
+    #  - tanner_web
      - tanner_phpox
 
 ## Snare Service
@@ -478,7 +553,7 @@ services:
      - tanner_local
     ports:
      - "80:80"
-    image: "dtagdevsec/snare:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/snare:{{ tpot_version }}"
     depends_on:
      - tanner
 {% endif %}
@@ -498,7 +573,7 @@ services:
      - NET_ADMIN
      - SYS_NICE
      - NET_RAW
-    image: "dtagdevsec/fatt:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/fatt:{{ tpot_version }}"
     volumes:
      - /data/fatt/log:/opt/fatt/log
 {% endif %}
@@ -509,7 +584,7 @@ services:
     container_name: p0f
     restart: always
     network_mode: "host"
-    image: "dtagdevsec/p0f:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/p0f:{{ tpot_version }}"
     read_only: true
     volumes:
      - /data/p0f/log:/var/log/p0f
@@ -528,7 +603,7 @@ services:
      - NET_ADMIN
      - SYS_NICE
      - NET_RAW
-    image: "dtagdevsec/suricata:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/suricata:{{ tpot_version }}"
     volumes:
      - /data/suricata/log:/var/log/suricata
 {% endif %}
@@ -570,7 +645,7 @@ services:
      - EWS_HPFEEDS_FORMAT=json
     env_file:
      - /opt/tpot/etc/compose/elk_environment
-    image: "dtagdevsec/ewsposter:{{ tpot_version }}"
+    image: "ghcr.io/telekom-security/ewsposter:{{ tpot_version }}"
     volumes:
      - /data:/data
      - /data/ews/conf/ews.ip:/opt/ewsposter/ews.ip

@@ -65,6 +65,12 @@
     - '"cockpit-pcp set on hold" in hold_result_cockpit_pcp.stdout'
   tags: molecule-idempotence-notest
 
+- name: Hold elasticsearch-curator state
+  command: apt-mark hold elasticsearch-curator
+  register: hold_result_elasticsearch_curator
+  changed_when:
+    - '"elasticsearch-curator set on hold" in hold_result_elasticsearch_curator.stdout'
+
 - name: Install needed python module
   pip:
     name: "{{ PYTHONPACKAGES }}"
