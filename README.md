@@ -35,6 +35,7 @@ You may choose from any of the following:
   - `elasticpot`
   - `honeypy`
   - `honeysap`
+  - `ipphoney`
   - `glutton`
   - `honeytrap`
   - `heralding`
