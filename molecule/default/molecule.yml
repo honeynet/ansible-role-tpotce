@@ -8,7 +8,7 @@ lint: |
   ansible-lint
 platforms:
   - name: instance
-    image: "honeynet/docker-debian10-ansible-python3:latest"
+    image: "geerlingguy/docker-debian10-ansible:latest"
     command: /lib/systemd/systemd
     volumes:
       - /sys/fs/cgroup:/sys/fs/cgroup:ro
