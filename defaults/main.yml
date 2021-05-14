@@ -16,5 +16,5 @@ honeypot_list:
   - tanner
   - fatt
 logrotate_days: 30
-filebeat_version: "6.5.4"
+filebeat_version: "7.11.1"
 tpot_version: "2006"
