@@ -105,7 +105,6 @@ DIRECTORYLIST:
   - /data/ddospot/log
   - /data/dicompot/images
   - /data/dicompot/log
-  - /data/dicompot/log
   - /data/dionaea/log
   - /data/dionaea/bistreams
   - /data/dionaea/binaries
@@ -130,6 +129,7 @@ DIRECTORYLIST:
   - /data/honeysap/log
   - /data/ipphoney/log
   - /data/log4pot/log
+  - /data/log4pot/payloads
   - /data/mailoney/log
   - /data/medpot/log
   - /data/nginx/log
