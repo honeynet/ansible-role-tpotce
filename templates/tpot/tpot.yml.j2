@@ -576,7 +576,8 @@ services:
     image: "dtagdevsec/log4pot:2006"
     read_only: true
     volumes:
-     - /data/log4pot/log:/var/log/log4pot
+     - /data/log4pot/log:/var/log/log4pot/log
+     - /data/log4pot/payloads:/var/log/log4pot/payloads
 {% endif %}
 
 ##################
