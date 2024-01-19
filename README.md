@@ -93,6 +93,14 @@ Use this variable to specify what version of filebeat you would like to use. The
   roles:
     - ansible-role-tpotce
 ```
+## Special Thanks
+
+<p>This project is supported by:</p>
+<p>
+  <a href="https://www.digitalocean.com/">
+    <img src="https://opensource.nyc3.cdn.digitaloceanspaces.com/attribution/assets/SVG/DO_Logo_horizontal_blue.svg" width="201px">
+  </a>
+</p>
 
 ## License
 
