@@ -100,6 +100,10 @@ DIRECTORYLIST:
   - /data/cowrie/keys/
   - /data/cowrie/misc/
   - /data/cowrie/log/tty/
+  - /data/ddospot/bl
+  - /data/ddospot/db
+  - /data/ddospot/log
+  - /data/dicompot/images
   - /data/dicompot/log
   - /data/dionaea/log
   - /data/dionaea/bistreams
@@ -112,15 +116,20 @@ DIRECTORYLIST:
   - /data/elasticpot/log
   - /data/elk/data
   - /data/elk/log
+  - /data/endlessh/log
   - /data/fatt/log
   - /data/honeytrap/log/
   - /data/honeytrap/attacks/
   - /data/honeytrap/downloads/
   - /data/glutton/log
+  - /data/hellpot/log
   - /data/heralding/log
+  - /data/honeypots/log
   - /data/honeypy/log
   - /data/honeysap/log
   - /data/ipphoney/log
+  - /data/log4pot/log
+  - /data/log4pot/payloads
   - /data/mailoney/log
   - /data/medpot/log
   - /data/nginx/log
@@ -128,6 +137,7 @@ DIRECTORYLIST:
   - /data/emobility/log
   - /data/ews/conf
   - /data/rdpy/log
+  - /data/redishoneypot/log
   - /data/spiderfoot
   - /data/suricata/log
   - /data/tanner/log
