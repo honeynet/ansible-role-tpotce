@@ -1,5 +1,0 @@
----
-- name: Copy over sysctl file
-  copy:
-    src: sysctl/99-tpot.conf
-    dest: /etc/sysctl.d/99-tpot.conf

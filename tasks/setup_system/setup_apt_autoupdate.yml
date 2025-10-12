@@ -1,5 +1,0 @@
----
-- name: Copy over apt autoupdate
-  copy:
-    src: apt/10periodic
-    dest: /etc/apt/apt.conf.d/10periodic
