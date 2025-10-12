@@ -1,0 +1,62 @@
+---
+#################################
+# T-Pot - Install Docker Engine #
+#################################
+
+- name: T-Pot - Install Docker Engine
+  hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Install Docker Engine packages (openSUSE Tumbleweed)
+      package:
+        name:
+          - docker
+          - docker-bash-completion
+          - docker-buildx
+          - docker-compose
+          - docker-compose-switch
+          - liblvm2cmd2_03
+          - lvm2
+        state: latest
+        update_cache: yes
+      when: ansible_distribution in ["openSUSE Tumbleweed"]
+      tags:
+        - "openSUSE Tumbleweed"
+
+    - name: Install Docker Engine packages (AlmaLinux, Debian, Fedora, Raspbian, RHEL, Rocky, Ubuntu)
+      package:
+        name:
+          - docker-ce 
+          - docker-ce-cli 
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin 
+        state: latest
+        update_cache: yes
+      when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+      tags:
+        - "AlmaLinux"
+        - "Debian"
+        - "Fedora"
+        - "Raspbian"
+        - "RedHat"
+        - "Rocky"
+        - "Ubuntu"
+
+    - name: Stop Docker (All)
+      service:
+        name: docker
+        state: stopped
+        enabled: false
+      when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+      tags:
+        - "AlmaLinux"
+        - "Debian"
+        - "Fedora"
+        - "openSUSE Tumbleweed"
+        - "Raspbian"
+        - "RedHat"
+        - "Rocky"
+        - "Ubuntu"

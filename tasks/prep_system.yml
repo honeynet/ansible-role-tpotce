@@ -1,0 +1,150 @@
+---
+############################################################
+# T-Pot - Install recommended, remove conflicting packages #
+############################################################
+
+- name: T-Pot - Install recommended, remove conflicting packages 
+  hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Syncing clocks (All)
+      shell: "hwclock --hctosys"
+      when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+      ignore_errors: true
+      tags:
+        - "AlmaLinux"
+        - "Debian"
+        - "Fedora"
+        - "openSUSE Tumbleweed"
+        - "Raspbian"
+        - "RedHat"
+        - "Rocky"
+        - "Ubuntu"
+
+    - name: Install recommended packages (Debian, Raspbian, Ubuntu)
+      package:
+        name:
+          - apache2-utils
+          - bash-completion
+          - ca-certificates
+          - cracklib-runtime
+          - cron
+          - curl
+          - git
+          - gnupg
+          - grc
+          - htop
+          - micro
+          - net-tools
+          - vim
+          - wget
+        state: latest
+        update_cache: yes
+      when: ansible_distribution in ["Debian", "Raspbian", "Ubuntu"]
+      tags:
+        - "Debian"
+        - "Raspbian"
+        - "Ubuntu"
+
+    - name: Install grc from remote repo (AlmaLinux, Rocky)
+      ansible.builtin.dnf:
+        name: 'https://github.com/kriipke/grc/releases/download/1.13.8/grc-1.13.8-1.el7.noarch.rpm'
+        disable_gpg_check: true
+        state: present
+      when: ansible_distribution in ["AlmaLinux", "Rocky"]
+      tags:
+        - "AlmaLinux"
+        - "Rocky"
+
+    - name: Install recommended packages (AlmaLinux, Rocky)
+      package:
+        name:
+          - bash-completion
+          - ca-certificates
+          - cracklib
+          - curl
+          - dnf-plugins-core
+          - git
+          - grc
+          - htop
+          - httpd-tools
+          - net-tools
+          - tar
+          - vim
+          - wget
+        state: latest
+        update_cache: yes
+      when: ansible_distribution in ["AlmaLinux", "Rocky"]
+      tags:
+        - "AlmaLinux"
+        - "Rocky"
+
+    - name: Download and install micro editor (AlmaLinux, openSUSE Tumbleweed, RHEL, Rocky)
+      shell: "curl https://getmic.ro | bash && mv micro /usr/bin"
+      args:
+        executable: /bin/bash
+      when: ansible_distribution in ["AlmaLinux", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+      tags:
+        - "AlmaLinux"
+        - "openSUSE Tumbleweed"
+        - "RedHat"
+        - "Rocky"
+
+    - name: Install recommended packages (Fedora)
+      package:
+        name:
+          - bash-completion
+          - ca-certificates
+          - cracklib
+          - cronie
+          - curl
+          - dnf-plugins-core
+          - git
+          - grc
+          - htop
+          - httpd-tools
+          - micro
+          - net-tools
+          - vim
+          - wget
+        state: latest
+        update_cache: yes
+      when: ansible_distribution in ["Fedora"]
+      tags:
+        - "Fedora"
+
+    - name: Remove conflicting packages (openSUSE Tumbleweed)
+      package:
+        name:
+          - cups
+          - net-tools
+          - postfix
+          - yast2-auth-client
+          - yast2-auth-user
+        state: absent
+        update_cache: yes
+      when: ansible_distribution in ["openSUSE Tumbleweed"]
+      tags:
+        - "openSUSE Tumbleweed"
+
+    - name: Install recommended packages (openSUSE Tumbleweed)
+      package:
+        name:
+          - apache2-utils
+          - bash-completion
+          - busybox-net-tools
+          - ca-certificates
+          - cracklib
+          - curl
+          - git
+          - grc
+          - htop
+          - vim
+          - wget
+        state: latest
+        update_cache: yes
+      when: ansible_distribution in ["openSUSE Tumbleweed"]
+      tags:
+        - "openSUSE Tumbleweed"
