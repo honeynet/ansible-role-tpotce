@@ -1,4 +1,30 @@
 ---
+Docker_Packages:
+  - docker-ce 
+  - docker-ce-cli 
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin 
+
+Docker_Packages_Remove:
+  - docker
+  - docker-engine
+  - docker.io
+  - containerd
+  - runc
+  - podman-docker
+  - podman
+
+Recommended_Packages:
+  - bash-completion
+  - ca-certificates
+  - curl
+  - git
+  - grc
+  - htop
+  - vim
+  - wget
+
 PREINSTALLPACKAGES:
   - aria2
   - apache2-utils

@@ -1,0 +1,10 @@
+---
+Fedora_Docker_Repository: "https://download.docker.com/linux/fedora/docker-ce.repo"
+
+Fedora_recommended_packages:
+  - cracklib
+  - cronie
+  - dnf-plugins-core
+  - httpd-tools
+  - micro
+  - net-tools

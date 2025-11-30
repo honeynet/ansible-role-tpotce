@@ -1,0 +1,8 @@
+---
+Debian_recommended_packages:
+  - apache2-utils
+  - cracklib-runtime
+  - cron
+  - gnupg
+  - micro
+  - net-tools

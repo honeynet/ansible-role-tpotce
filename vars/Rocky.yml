@@ -1,0 +1,11 @@
+---
+Rocky_Docker_Repository: "https://download.docker.com/linux/centos/docker-ce.repo"
+
+Rocky_grc_remote_repo: "https://github.com/kriipke/grc/releases/download/1.13.8/grc-1.13.8-1.el7.noarch.rpm"
+
+Rocky_recommended_packages:
+  - cracklib
+  - dnf-plugins-core
+  - httpd-tools
+  - net-tools
+  - tar

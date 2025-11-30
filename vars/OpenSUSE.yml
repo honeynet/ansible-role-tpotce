@@ -1,0 +1,22 @@
+---
+OpenSUSE_Docker_Packages:
+  - docker
+  - docker-bash-completion
+  - docker-buildx
+  - docker-compose
+  - docker-compose-switch
+  - liblvm2cmd2_03
+  - lvm2
+
+OpenSUSE_recommended_packages:
+  - apache2-utils
+  - busybox-net-tools
+  - ca-certificates
+  - cracklib
+
+OpenSUSE_packages_remove:
+  - cups
+  - net-tools
+  - postfix
+  - yast2-auth-client
+  - yast2-auth-user
