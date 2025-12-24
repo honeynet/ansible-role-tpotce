@@ -1,0 +1,90 @@
+---
+
+############################
+# T-Pot - Restart services #
+############################
+
+- name: T-Pot - Restart services
+  hosts: all
+  gather_facts: true
+  become: true
+
+  tasks:
+    - name: Start Resolved (Fedora, RHEL, Ubuntu)
+      service:
+        name: systemd-resolved
+        state: restarted
+      when: ansible_distribution in ["Fedora", "RedHat", "Ubuntu"]
+      tags:
+        - "Fedora"
+        - "RedHat"
+        - "Ubuntu"
+
+    - name: Restart Firewalld (AlmaLinux, Fedora, openSUSE Tumbleweed, Rocky)
+      service:
+        name: firewalld
+        state: restarted
+      when: ansible_distribution in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+      tags:
+        - "AlmaLinux"
+        - "Fedora"
+        - "openSUSE Tumbleweed"
+        - "RedHat"
+        - "Rocky"
+
+    - name: Get Firewall rules (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
+      command: "firewall-cmd --list-all"
+      register: firewall_output
+      when: ansible_distribution in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+      tags:
+        - "AlmaLinux"
+        - "Fedora"
+        - "openSUSE Tumbleweed"
+        - "RedHat"
+        - "Rocky"
+
+    - name: Print Firewall rules (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
+      debug:
+        var: firewall_output.stdout_lines
+      when: ansible_distribution in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+      tags:
+        - "AlmaLinux"
+        - "Fedora"
+        - "openSUSE Tumbleweed"
+        - "RedHat"
+        - "Rocky"
+
+    - name: Enable Docker Engine upon boot (All)
+      service:
+        name: docker
+        state: restarted
+        enabled: true
+      when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+      tags:
+        - "AlmaLinux"
+        - "Debian"
+        - "Fedora"
+        - "openSUSE Tumbleweed"
+        - "Raspbian"
+        - "RedHat"
+        - "Rocky"
+        - "Ubuntu"
+
+    - name: Restart SSH (All)
+      service:
+        name: "{{ 'ssh' if ansible_distribution in ['Ubuntu'] else 'sshd' }}"
+        state: restarted
+        enabled: true
+      when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+      tags:
+        - "AlmaLinux"
+        - "Debian"
+        - "Fedora"
+        - "openSUSE Tumbleweed"
+        - "Raspbian"
+        - "RedHat"
+        - "Rocky"
+        - "Ubuntu"
+
+
+

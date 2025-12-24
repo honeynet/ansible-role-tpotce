@@ -1,21 +1,27 @@
 ---
 - name: Bootstrap Python
-  ansible.builtin.include_tasks: bootstrap_python.yml
+  ansible.builtin.include_tasks: 01_bootstrap_python.yml
 
 - name: Support Check
-  ansible.builtin.include_tasks: support_check.yml
+  ansible.builtin.include_tasks: 02_support_check.yml
 
 - name: Prep System
-  ansible.builtin.include_tasks: prep_system.yml
+  ansible.builtin.include_tasks: 03_prep_system.yml
 
 - name: Prep for Docker
-  ansible.builtin.include_tasks: prep_for_docker.ylm
+  ansible.builtin.include_tasks: 04_prep_for_docker.ylm
 
 - name: Install Docker
-  ansible.builtin.include_tasks: install_docker.yml
+  ansible.builtin.include_tasks: 05_install_docker.yml
 
 - name: Config System
-  ansible.builtin.include_tasks: config_system.yml
+  ansible.builtin.include_tasks: 06_config_system.yml
 
 - name: Setup tpot
-  ansible.builtin.include_tasks: setup_tpot.yml
+  ansible.builtin.include_tasks: 07_setup_tpot.yml
+
+- name: Setup System
+  ansible.builtin.include_tasks: 08_setup_system.yml
+    
+- name: Restart Services
+  ansible.builtin.include_tasks: 09_restart_services.yml
