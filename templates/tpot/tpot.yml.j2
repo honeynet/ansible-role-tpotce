@@ -1,0 +1,17 @@
+# T-Pot: CUSTOM EDITION
+#
+# Managed by the ansible-role-tpotce role -- manual changes will be overwritten.
+#
+# Service definitions are taken verbatim from upstream's service catalogue at
+# {{ tpot_services_catalogue }}
+# and filtered the way compose/customizer.py would. This is a sensor-only
+# configuration: it has no web UI and no local Elasticsearch, Logstash or
+# Kibana. Selected services:
+#
+{% for service in tpot_compose_services %}
+#   - {{ service }}
+{% endfor %}
+#
+# No generation timestamp is emitted on purpose, so that re-running the role
+# against an unchanged configuration leaves this file untouched.
+{{ {'networks': tpot_compose_networks, 'services': tpot_compose_services} | to_nice_yaml(indent=2, sort_keys=False, width=1000) }}

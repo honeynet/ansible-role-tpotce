@@ -1,6 +1,7 @@
 ---
 # The task order below mirrors the play order of the upstream installer,
-# telekom-security/tpotce -> installer/install/tpot.yml.
+# telekom-security/tpotce -> installer/install/tpot.yml, followed by the
+# post-playbook steps that upstream's install.sh performs.
 #
 # Note: unlike upstream, this role does not refuse to run as root.
 
@@ -47,3 +48,17 @@
 
 - name: Setup tpot
   ansible.builtin.include_tasks: 09_setup_tpot.yml
+
+- name: Config T-Pot
+  ansible.builtin.include_tasks: 10_config_tpot.yml
+
+- name: Build Compose
+  ansible.builtin.include_tasks: 11_build_compose.yml
+
+- name: Pull Images
+  ansible.builtin.include_tasks: 12_pull_images.yml
+  when: tpot_pull_images | bool
+
+- name: Daily Reboot
+  ansible.builtin.include_tasks: 13_daily_reboot.yml
+  when: tpot_daily_reboot | bool
