@@ -1,0 +1,36 @@
+---
+# openSUSE Tumbleweed (matched via ansible_os_family).
+
+tpot_recommended_packages:
+  - apache2-utils
+  - bash-completion
+  - busybox-net-tools
+  - ca-certificates
+  - cracklib
+  - curl
+  - git
+  - grc
+  - htop
+  - vim
+  - wget
+
+tpot_conflicting_packages:
+  - cups
+  - net-tools
+  - postfix
+  - yast2-auth-client
+  - yast2-auth-user
+
+tpot_docker_packages:
+  - docker
+  - docker-bash-completion
+  - docker-buildx
+  - docker-compose
+  - docker-compose-switch
+  - liblvm2cmd2_03
+  - lvm2
+
+tpot_install_micro_from_source: true
+
+# Provides crontab, which the daily reboot job needs.
+tpot_cron_package: cronie

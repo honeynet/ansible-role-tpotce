@@ -2,6 +2,9 @@
 ############################################################
 # T-Pot - Install recommended, remove conflicting packages #
 ############################################################
+#
+# The package lists themselves live in vars/<distribution>.yml, loaded by
+# tasks/main.yml. These tasks only reference the resulting variables.
 
 - name: Syncing clocks (All)
   ansible.builtin.command: "hwclock --hctosys"
@@ -17,63 +20,53 @@
     - "Rocky"
     - "Ubuntu"
 
-- name: Install recommended packages (Debian, Raspbian, Ubuntu)
+- name: Remove conflicting packages (All)
   ansible.builtin.package:
-    name:
-      - apache2-utils
-      - bash-completion
-      - ca-certificates
-      - cracklib-runtime
-      - cron
-      - curl
-      - git
-      - gnupg
-      - grc
-      - htop
-      - micro
-      - net-tools
-      - vim
-      - wget
-    state: latest
+    name: "{{ tpot_conflicting_packages }}"
+    state: absent
     update_cache: true
-  when: ansible_facts['distribution'] in ["Debian", "Raspbian", "Ubuntu"]
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_conflicting_packages | length > 0
   tags:
+    - "AlmaLinux"
     - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
     - "Raspbian"
+    - "RedHat"
+    - "Rocky"
     - "Ubuntu"
 
 - name: Install grc from remote repo (AlmaLinux, Rocky)
   ansible.builtin.dnf:
-    name: 'https://github.com/kriipke/grc/releases/download/1.13.8/grc-1.13.8-1.el7.noarch.rpm'
+    name: "{{ tpot_grc_rpm_url }}"
     disable_gpg_check: true
     state: present
-  when: ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_grc_rpm_url | length > 0
   tags:
     - "AlmaLinux"
     - "Rocky"
 
-- name: Install recommended packages (AlmaLinux, Rocky)
+- name: Install recommended packages (All)
   ansible.builtin.package:
-    name:
-      - bash-completion
-      - ca-certificates
-      - cracklib
-      - curl
-      - dnf-plugins-core
-      - git
-      - grc
-      - htop
-      - httpd-tools
-      - net-tools
-      - tar
-      - vim
-      - wget
+    name: "{{ tpot_packages }}"
     state: latest
     update_cache: true
-  when: ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_packages | length > 0
   tags:
     - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
     - "Rocky"
+    - "Ubuntu"
 
 - name: Download and install micro editor (AlmaLinux, openSUSE Tumbleweed, RHEL, Rocky)
   ansible.builtin.shell:
@@ -81,66 +74,11 @@
       set -o pipefail
       curl https://getmic.ro | bash && mv micro /usr/bin
     executable: /bin/bash
-  when: ansible_facts['distribution'] in ["AlmaLinux", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_install_micro_from_source | bool
   tags:
     - "AlmaLinux"
     - "openSUSE Tumbleweed"
     - "RedHat"
     - "Rocky"
-
-- name: Install recommended packages (Fedora)
-  ansible.builtin.package:
-    name:
-      - bash-completion
-      - ca-certificates
-      - cracklib
-      - cronie
-      - curl
-      - dnf-plugins-core
-      - git
-      - grc
-      - htop
-      - httpd-tools
-      - micro
-      - net-tools
-      - vim
-      - wget
-    state: latest
-    update_cache: true
-  when: ansible_facts['distribution'] in ["Fedora"]
-  tags:
-    - "Fedora"
-
-- name: Remove conflicting packages (openSUSE Tumbleweed)
-  ansible.builtin.package:
-    name:
-      - cups
-      - net-tools
-      - postfix
-      - yast2-auth-client
-      - yast2-auth-user
-    state: absent
-    update_cache: true
-  when: ansible_facts['distribution'] in ["openSUSE Tumbleweed"]
-  tags:
-    - "openSUSE Tumbleweed"
-
-- name: Install recommended packages (openSUSE Tumbleweed)
-  ansible.builtin.package:
-    name:
-      - apache2-utils
-      - bash-completion
-      - busybox-net-tools
-      - ca-certificates
-      - cracklib
-      - curl
-      - git
-      - grc
-      - htop
-      - vim
-      - wget
-    state: latest
-    update_cache: true
-  when: ansible_facts['distribution'] in ["openSUSE Tumbleweed"]
-  tags:
-    - "openSUSE Tumbleweed"
