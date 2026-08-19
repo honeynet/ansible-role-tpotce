@@ -22,11 +22,11 @@
 - name: Install Docker Engine packages (AlmaLinux, Debian, Fedora, Raspbian, RHEL, Rocky, Ubuntu)
   package:
     name:
-      - docker-ce 
-      - docker-ce-cli 
+      - docker-ce
+      - docker-ce-cli
       - containerd.io
       - docker-buildx-plugin
-      - docker-compose-plugin 
+      - docker-compose-plugin
     state: latest
     update_cache: yes
   when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]

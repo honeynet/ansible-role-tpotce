@@ -1,3 +1,6 @@
-
 .DS_Store
 *.pyc
+
+# ansible-lint / molecule scratch
+.ansible/
+.cache/

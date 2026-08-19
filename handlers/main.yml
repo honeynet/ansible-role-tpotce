@@ -12,7 +12,6 @@
     - "RedHat"
     - "Rocky"
 
-
 - name: Restart SSH (All)
   service:
     name: "{{ 'ssh' if ansible_distribution in ['Ubuntu'] else 'sshd' }}"
