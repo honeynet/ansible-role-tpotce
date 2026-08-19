@@ -1,0 +1,44 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  tasks:
+    - name: Docker Engine is installed and enabled
+      ansible.builtin.service_facts:
+
+    - name: The docker service is enabled
+      ansible.builtin.assert:
+        that: ansible_facts.services['docker.service'].status == 'enabled'
+        fail_msg: "docker.service is not enabled"
+
+    - name: The tpot systemd unit was installed
+      ansible.builtin.stat:
+        path: /etc/systemd/system/tpot.service
+      register: tpot_unit
+
+    - name: Assert the tpot unit exists
+      ansible.builtin.assert:
+        that: tpot_unit.stat.exists
+        fail_msg: "tpot.service was not installed"
+
+    - name: The tpot group and user exist
+      ansible.builtin.getent:
+        database: group
+        key: tpot
+
+    - name: SSH listens on 64295
+      ansible.builtin.command: sshd -T
+      changed_when: false
+      register: sshd_config
+
+    - name: Assert the SSH port was changed
+      ansible.builtin.assert:
+        that: "'port 64295' in sshd_config.stdout"
+        fail_msg: "sshd is not configured for port 64295"
+
+    - name: docker-compose.yml was generated and is valid
+      ansible.builtin.command: docker compose -f docker-compose.yml config --quiet
+      args:
+        chdir: "{{ ansible_env.HOME }}/tpotce"
+      changed_when: false

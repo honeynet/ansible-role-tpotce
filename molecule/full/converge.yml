@@ -1,0 +1,10 @@
+---
+- name: Converge
+  hosts: all
+  become: true
+  vars:
+    # Pulling every honeypot image takes a long time and is not what this
+    # scenario is checking.
+    tpot_pull_images: false
+  roles:
+    - role: ansible-role-tpotce

@@ -1,0 +1,192 @@
+---
+- name: Verify
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    tpot_dir: /opt/tpotce
+
+  tasks:
+
+    ##########################################################################
+    # System state
+    ##########################################################################
+
+    - name: Collect service facts
+      ansible.builtin.service_facts:
+
+    - name: Docker Engine is installed and enabled
+      ansible.builtin.assert:
+        that: ansible_facts.services['docker.service'].status == 'enabled'
+        fail_msg: "docker.service is not enabled"
+
+    - name: The tpot group exists
+      ansible.builtin.getent:
+        database: group
+        key: tpot
+
+    - name: The tpot user exists
+      ansible.builtin.getent:
+        database: passwd
+        key: tpot
+
+    - name: The tpot systemd unit was installed
+      ansible.builtin.slurp:
+        src: /etc/systemd/system/tpot.service
+      register: tpot_unit
+
+    - name: Assert the tpot unit points at the generated compose file
+      ansible.builtin.assert:
+        that: tpot_dir ~ '/docker-compose.yml' in (tpot_unit.content | b64decode)
+        fail_msg: "tpot.service does not reference {{ tpot_dir }}/docker-compose.yml"
+
+    - name: SSH is configured for port 64295
+      ansible.builtin.command: sshd -T
+      changed_when: false
+      register: sshd_config
+
+    - name: Assert the SSH port was changed
+      ansible.builtin.assert:
+        that: "'port 64295' in sshd_config.stdout"
+        fail_msg: "sshd is not configured for port 64295"
+
+    - name: The nightly reboot cron job was installed
+      ansible.builtin.command: crontab -l -u root
+      changed_when: false
+      register: root_crontab
+
+    - name: Assert the reboot job exists
+      ansible.builtin.assert:
+        that: "'T-Pot Daily Reboot' in root_crontab.stdout"
+        fail_msg: "the daily reboot cron job is missing"
+
+    ##########################################################################
+    # T-Pot configuration
+    ##########################################################################
+
+    - name: Read the T-Pot config file
+      ansible.builtin.slurp:
+        src: "{{ tpot_dir }}/.env"
+      register: env_raw
+
+    - name: The sensor keys were written to .env
+      ansible.builtin.assert:
+        that:
+          - "'TPOT_TYPE=SENSOR' in env_content"
+          - "'WEB_USER=' in env_content"
+        fail_msg: ".env was not configured for a sensor"
+      vars:
+        env_content: "{{ env_raw.content | b64decode }}"
+
+    - name: The elk_environment placeholder exists so compose can parse env_file
+      ansible.builtin.stat:
+        path: "{{ tpot_dir }}/data/tpot/etc/compose/elk_environment"
+      register: elk_env
+
+    - name: Assert the elk_environment placeholder was created
+      ansible.builtin.assert:
+        that: elk_env.stat.exists
+        fail_msg: "elk_environment placeholder is missing, first compose up would fail"
+
+    ##########################################################################
+    # Generated docker-compose.yml
+    ##########################################################################
+
+    - name: Read the generated docker-compose.yml
+      ansible.builtin.slurp:
+        src: "{{ tpot_dir }}/docker-compose.yml"
+      register: compose_raw
+
+    - name: Parse the generated docker-compose.yml
+      ansible.builtin.set_fact:
+        compose: "{{ compose_raw.content | b64decode | from_yaml }}"
+
+    - name: The requested honeypots are present
+      ansible.builtin.assert:
+        that: item in compose.services
+        fail_msg: "{{ item }} is missing from docker-compose.yml"
+      loop:
+        - tpotinit
+        - cowrie
+        - dionaea
+        - heralding
+        - suricata
+        - honeytrap
+        - filebeat
+
+    - name: Selecting snare pulls in the whole Snare / Tanner group
+      ansible.builtin.assert:
+        that: item in compose.services
+        fail_msg: "{{ item }} should have been added alongside snare"
+      loop:
+        - snare
+        - tanner
+        - tanner_api
+        - tanner_phpox
+        - tanner_redis
+
+    - name: Glutton loses to honeytrap
+      ansible.builtin.assert:
+        that: "'glutton' not in compose.services"
+        fail_msg: "glutton must not run alongside honeytrap"
+
+    - name: The web UI and ELK stack are never generated
+      ansible.builtin.assert:
+        that: item not in compose.services
+        fail_msg: "{{ item }} must never appear in a sensor configuration"
+      loop:
+        - elasticsearch
+        - kibana
+        - logstash
+        - map_data
+        - map_redis
+        - map_web
+        - nginx
+        - spiderfoot
+
+    - name: Only networks that are actually used are declared
+      ansible.builtin.assert:
+        that: compose.networks | default({}) | list | symmetric_difference(used_networks) | length == 0
+        fail_msg: >-
+          Declared networks {{ compose.networks | default({}) | list }}
+          do not match the networks in use {{ used_networks }}
+      vars:
+        used_networks: >-
+          {%- set nets = [] -%}
+          {%- for service in compose.services.values() -%}
+            {%- for network in service.networks | default([]) -%}
+              {%- set _ = nets.append(network) -%}
+            {%- endfor -%}
+          {%- endfor -%}
+          {{ nets | unique | list }}
+
+    - name: No two services publish the same host port
+      ansible.builtin.assert:
+        that: bindings | length == bindings | unique | length
+        fail_msg: "Duplicate host port bindings: {{ bindings }}"
+      vars:
+        bindings: >-
+          {%- set out = [] -%}
+          {%- for service in compose.services.values() -%}
+            {%- for entry in service.ports | default([]) -%}
+              {%- set spec = entry | string -%}
+              {%- set mapping = spec.split('/')[0].split(':') -%}
+              {%- if mapping | length > 1 -%}
+                {%- set _ = out.append(mapping[-2] ~ '/' ~ (spec.split('/')[1] if '/' in spec else 'tcp')) -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endfor -%}
+          {{ out }}
+
+    - name: Filebeat is wired up for T-Pot 24.04 paths
+      ansible.builtin.assert:
+        that:
+          - "'${TPOT_DATA_PATH}:/data:ro' in compose.services.filebeat.volumes"
+          - "'${TPOT_DATA_PATH}/tpot/etc/compose/elk_environment' in compose.services.filebeat.env_file"
+        fail_msg: "filebeat is not using the 24.04 data paths"
+
+    - name: Docker accepts the generated compose file
+      ansible.builtin.command: docker compose -f docker-compose.yml config --quiet
+      args:
+        chdir: "{{ tpot_dir }}"
+      changed_when: false
