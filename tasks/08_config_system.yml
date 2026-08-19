@@ -1,0 +1,63 @@
+---
+#######################################################################
+# T-Pot - Adjust group users, bashrc, clone / update T-Pot repository #
+#######################################################################
+
+# Upstream aborts here if it detects a root user id. That check is left out on
+# purpose so the role can be driven by provisioning systems that run as root.
+
+- name: Add aliases
+  ansible.builtin.blockinfile:
+    path: "{{ tpot_user_home }}/.bashrc"
+    block: |
+      alias dps='{{ "grc --colour=on " if ansible_facts['distribution'] != "RedHat" else "" }}docker ps -f status=running -f status=exited --format "table {{ '{{' }}.Names{{ '}}' }}\\t{{ '{{' }}.Status{{ '}}' }}\\t{{ '{{' }}.Ports{{ '}}' }}" | sort'
+      alias dim='{{ "grc --colour=on " if ansible_facts['distribution'] != "RedHat" else "" }}docker images --format "table {{ '{{' }}.Repository{{ '}}' }}\\t{{ '{{' }}.Tag{{ '}}' }}\\t{{ '{{' }}.ID{{ '}}' }}\\t{{ '{{' }}.Size{{ '}}' }}\\t{{ '{{' }}.CreatedSince{{ '}}' }}\\t{{ '{{' }}.Repository{{ '}}' }}:{{ '{{' }}.Tag{{ '}}' }}"'
+      alias dpsw='watch -c bash -ic dps'
+      alias mi='micro'
+      alias sudo='sudo '
+    marker: "# {mark} ANSIBLE MANAGED BLOCK"
+    insertafter: EOF
+    create: true
+    mode: '0644'
+    state: present
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+# /opt is root owned, so the directory has to be created with become before
+# the unprivileged clone can write into it.
+- name: Create the T-Pot directory (All)
+  become: true
+  ansible.builtin.file:
+    path: "{{ tpot_dir }}"
+    state: directory
+    owner: "{{ tpot_user }}"
+    group: tpot
+    mode: '0755'
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+
+- name: Clone / Update T-Pot repository (All)
+  ansible.builtin.git:
+    repo: "{{ tpot_repo }}"
+    dest: "{{ tpot_dir }}/"
+    version: "{{ tpot_repo_version }}"
+    clone: true
+    update: false
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+
+- name: Add current user to Docker, T-Pot group (All)
+  become: true
+  ansible.builtin.user:
+    name: "{{ tpot_user }}"
+    groups:
+      - docker
+      - tpot
+    append: true
+  when: ansible_facts['distribution'] in tpot_supported_distributions

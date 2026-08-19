@@ -1,0 +1,19 @@
+---
+########################################
+# T-Pot - Install service              #
+########################################
+
+# Upstream templates installer/install/tpot.service out of the cloned
+# repository. That file hardcodes /home/<user>/tpotce, which is wrong whenever
+# the role installs for root or for a user whose home is not under /home, so
+# the role ships its own copy honouring `tpot_dir` instead.
+- name: Install systemd service (All)
+  become: true
+  ansible.builtin.template:
+    src: tpot/tpot.service.j2
+    dest: /etc/systemd/system/tpot.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Reload systemd and enable T-Pot service
+  when: ansible_facts['distribution'] in tpot_supported_distributions

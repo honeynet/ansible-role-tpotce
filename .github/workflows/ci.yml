@@ -31,5 +31,14 @@ jobs:
       - name: Install test dependencies
         run: pip3 install -r requirements.txt
 
+      # requirements.txt installs ansible-core, which ships no collections.
+      # ansible-lint needs ansible.posix present to resolve the FQCN module
+      # names the tasks use.
+      - name: Install collection dependencies
+        run: ansible-galaxy collection install -r requirements.yml
+
       - name: Lint YAML
         run: yamllint .
+
+      - name: Lint Ansible
+        run: ansible-lint

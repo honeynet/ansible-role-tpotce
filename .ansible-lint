@@ -1,8 +1,16 @@
 ---
+# The role installs honeypots on a dedicated sensor, so a number of checks
+# that are sensible for general purpose roles do not apply here.
 skip_list:
-  - 701
-  - 703
-  - 305
-  - 601
-  - 306
-  - 503
+  # Upstream pins nothing and always installs the newest packages.
+  - package-latest
+  # Several steps (modprobe, setenforce, hwclock, repo bootstrap) have no
+  # module equivalent and are inherently not idempotent.
+  - no-changed-when
+  - command-instead-of-module
+  # Upstream's playbook is the reference for naming; task names mirror it.
+  - name[casing]
+
+exclude_paths:
+  - .github/
+  - molecule/

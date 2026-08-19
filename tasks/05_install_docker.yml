@@ -4,7 +4,7 @@
 #################################
 
 - name: Install Docker Engine packages (openSUSE Tumbleweed)
-  package:
+  ansible.builtin.package:
     name:
       - docker
       - docker-bash-completion
@@ -14,13 +14,13 @@
       - liblvm2cmd2_03
       - lvm2
     state: latest
-    update_cache: yes
-  when: ansible_distribution in ["openSUSE Tumbleweed"]
+    update_cache: true
+  when: ansible_facts['distribution'] in ["openSUSE Tumbleweed"]
   tags:
     - "openSUSE Tumbleweed"
 
 - name: Install Docker Engine packages (AlmaLinux, Debian, Fedora, Raspbian, RHEL, Rocky, Ubuntu)
-  package:
+  ansible.builtin.package:
     name:
       - docker-ce
       - docker-ce-cli
@@ -28,8 +28,8 @@
       - docker-buildx-plugin
       - docker-compose-plugin
     state: latest
-    update_cache: yes
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+    update_cache: true
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
   tags:
     - "AlmaLinux"
     - "Debian"
@@ -40,11 +40,11 @@
     - "Ubuntu"
 
 - name: Stop Docker (All)
-  service:
+  ansible.builtin.service:
     name: docker
     state: stopped
     enabled: false
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+  when: ansible_facts['distribution'] in tpot_supported_distributions
   tags:
     - "AlmaLinux"
     - "Debian"
