@@ -1,0 +1,44 @@
+---
+# Brings the container up to the baseline a real host would already have.
+# Everything installed here ships by default on a full install of the
+# distribution; the container images strip it out.
+#
+# No `become`. Molecule's container connection is already root, and the
+# rockylinux9 image has no password for the sudo hop, so escalating fails with
+# "sudo: PAM account management error: password is required".
+- name: Prepare
+  hosts: all
+  gather_facts: true
+
+  vars:
+    baseline_packages:
+      Debian:
+        - openssh-server
+        - systemd-resolved
+      RedHat:
+        # kmod provides modprobe, which 06_setup_system.yml uses to load
+        # iptable_filter.
+        - kmod
+        - openssh-server
+        - firewalld
+
+  tasks:
+    - name: Update the package cache
+      ansible.builtin.package:
+        update_cache: true
+      changed_when: false
+
+    # The RedHat family images ship curl-minimal, which conflicts with the full
+    # curl the role installs. A full install of these distributions already has
+    # curl, so this is a container artifact rather than a role problem.
+    - name: Replace curl-minimal with curl (RedHat family)
+      ansible.builtin.dnf:
+        name: curl
+        state: present
+        allowerasing: true
+      when: ansible_facts['os_family'] == 'RedHat'
+
+    - name: Install the baseline a real host ships with
+      ansible.builtin.package:
+        name: "{{ baseline_packages[ansible_facts['os_family']] }}"
+        state: present

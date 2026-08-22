@@ -1,4 +1,9 @@
 ---
 collections:
-  # ansible.posix.firewalld, used on the dnf based distributions.
+  # Runtime: ansible.posix.firewalld, used on the dnf based distributions.
   - name: ansible.posix
+
+  # Test only: the molecule docker driver drives community.docker.docker_container
+  # in its create/destroy playbooks, so the default scenario cannot create a
+  # container without it.
+  - name: community.docker
