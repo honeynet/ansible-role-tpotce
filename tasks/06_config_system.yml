@@ -44,7 +44,7 @@
   become: true
   user:
     name: "{{ ansible_user_id }}"
-    groups: 
+    groups:
       - docker
       - tpot
     append: yes

@@ -1,7 +1,5 @@
 ---
 extends: default
-ignore: |
- files/
 
 rules:
   braces:
@@ -12,3 +10,10 @@ rules:
     level: error
   line-length: disable
   truthy: disable
+  # Required by ansible-lint's yaml rule.
+  comments:
+    min-spaces-from-content: 1
+  comments-indentation: false
+  octal-values:
+    forbid-implicit-octal: true
+    forbid-explicit-octal: true

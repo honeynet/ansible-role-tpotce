@@ -29,7 +29,7 @@
   file:
     path: /etc/apt/keyrings
     state: directory
-    mode: 0755
+    mode: '0755'
   when: ansible_distribution in ["Debian", "Raspbian", "Ubuntu"]
   tags:
     - "Debian"
@@ -40,7 +40,7 @@
   get_url:
     url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
     dest: /etc/apt/keyrings/docker
-    mode: 0755
+    mode: '0755'
   when: ansible_distribution in ["Debian", "Raspbian", "Ubuntu"]
   tags:
     - "Debian"
