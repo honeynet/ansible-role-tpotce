@@ -2,38 +2,22 @@
 #################################
 # T-Pot - Install Docker Engine #
 #################################
+#
+# Package lists live in vars/<distribution>.yml.
 
-- name: Install Docker Engine packages (openSUSE Tumbleweed)
+- name: Install Docker Engine packages (All)
   ansible.builtin.package:
-    name:
-      - docker
-      - docker-bash-completion
-      - docker-buildx
-      - docker-compose
-      - docker-compose-switch
-      - liblvm2cmd2_03
-      - lvm2
+    name: "{{ tpot_docker_packages }}"
     state: latest
     update_cache: true
-  when: ansible_facts['distribution'] in ["openSUSE Tumbleweed"]
-  tags:
-    - "openSUSE Tumbleweed"
-
-- name: Install Docker Engine packages (AlmaLinux, Debian, Fedora, Raspbian, RHEL, Rocky, Ubuntu)
-  ansible.builtin.package:
-    name:
-      - docker-ce
-      - docker-ce-cli
-      - containerd.io
-      - docker-buildx-plugin
-      - docker-compose-plugin
-    state: latest
-    update_cache: true
-  when: ansible_facts['distribution'] in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_docker_packages | length > 0
   tags:
     - "AlmaLinux"
     - "Debian"
     - "Fedora"
+    - "openSUSE Tumbleweed"
     - "Raspbian"
     - "RedHat"
     - "Rocky"

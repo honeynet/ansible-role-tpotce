@@ -2,17 +2,12 @@
 #####################################
 # T-Pot - Prepare for Docker Engine #
 #####################################
+#
+# Package lists and repository URLs live in vars/<distribution>.yml.
 
-- name: Remove distribution based Docker packages and podman-docker (AlmaLinux, Debian, Fedora, Raspbian, RHEL, Rocky, Ubuntu)
+- name: Remove distribution based Docker packages and podman-docker (All)
   ansible.builtin.package:
-    name:
-      - docker
-      - docker-engine
-      - docker.io
-      - containerd
-      - runc
-      - podman-docker
-      - podman
+    name: "{{ tpot_docker_packages_remove }}"
     state: absent
     update_cache: true
   when: ansible_facts['distribution'] in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
@@ -107,33 +102,28 @@
     - "Raspbian"
     - "Ubuntu"
 
-- name: Add Docker repository (Fedora)
+- name: Add Docker repository (Fedora, RHEL)
   ansible.builtin.shell: |
     if [ "$(dnf repolist docker-ce-stable)" == "" ];
       then
-        dnf -y config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
+        dnf -y config-manager addrepo --from-repofile={{ tpot_docker_repo_url }}
     fi
-  when: ansible_facts['distribution'] in ["Fedora"]
+  when:
+    - ansible_facts['distribution'] in ["Fedora", "RedHat"]
+    - tpot_docker_repo_url | length > 0
   tags:
     - "Fedora"
-
-- name: Add Docker repository (RHEL)
-  ansible.builtin.shell: |
-    if [ "$(dnf repolist docker-ce-stable)" == "" ];
-      then
-        dnf -y config-manager addrepo --from-repofile=https://download.docker.com/linux/rhel/docker-ce.repo
-    fi
-  when: ansible_facts['distribution'] in ["RedHat"]
-  tags:
     - "RedHat"
 
 - name: Add Docker repository (AlmaLinux, Rocky)
   ansible.builtin.shell: |
     if [ "$(dnf repolist docker-ce-stable)" == "" ];
       then
-        dnf -y config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+        dnf -y config-manager --add-repo {{ tpot_docker_repo_url }}
     fi
-  when: ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
+  when:
+    - ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
+    - tpot_docker_repo_url | length > 0
   tags:
     - "AlmaLinux"
     - "Rocky"

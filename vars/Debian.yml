@@ -1,0 +1,33 @@
+---
+# Debian, Raspbian and Ubuntu (matched via ansible_os_family).
+
+tpot_recommended_packages:
+  - apache2-utils
+  - bash-completion
+  - ca-certificates
+  - cracklib-runtime
+  - cron
+  - curl
+  - git
+  - gnupg
+  - grc
+  - htop
+  - micro
+  - net-tools
+  - vim
+  - wget
+
+tpot_conflicting_packages: []
+
+tpot_docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+# micro is packaged for Debian derivatives.
+tpot_install_micro_from_source: false
+
+# Provides crontab, which the daily reboot job needs.
+tpot_cron_package: cron

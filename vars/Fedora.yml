@@ -1,0 +1,34 @@
+---
+# Fedora.
+
+tpot_recommended_packages:
+  - bash-completion
+  - ca-certificates
+  - cracklib
+  - cronie
+  - curl
+  - dnf-plugins-core
+  - git
+  - grc
+  - htop
+  - httpd-tools
+  - micro
+  - net-tools
+  - vim
+  - wget
+
+tpot_conflicting_packages: []
+
+tpot_docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+tpot_docker_repo_url: "https://download.docker.com/linux/fedora/docker-ce.repo"
+
+tpot_install_micro_from_source: false
+
+# Provides crontab, which the daily reboot job needs.
+tpot_cron_package: cronie

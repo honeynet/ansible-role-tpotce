@@ -1,0 +1,66 @@
+---
+# Internal role constants. Override the variables in defaults/main.yml instead.
+
+tpot_supported_distributions:
+  - AlmaLinux
+  - Debian
+  - Fedora
+  - openSUSE Tumbleweed
+  - Raspbian
+  - RedHat
+  - Rocky
+  - Ubuntu
+
+##############################################################################
+# Package lists
+#
+# Distribution specific lists live in vars/<distribution>.yml (or
+# vars/<os_family>.yml) and are loaded by tasks/main.yml. The values below are
+# the fallbacks for anything a distribution file does not define; the tasks
+# only ever reference the variable, never a literal package list.
+##############################################################################
+
+# Installed on every supported distribution.
+tpot_recommended_packages: []
+
+# Removed before the recommended packages are installed.
+tpot_conflicting_packages: []
+
+# Docker Engine packages to install.
+tpot_docker_packages: []
+
+# Distribution packages that conflict with Docker Engine. Identical on every
+# distribution that uses them, so this is not split per distribution.
+tpot_docker_packages_remove:
+  - docker
+  - docker-engine
+  - docker.io
+  - containerd
+  - runc
+  - podman-docker
+  - podman
+
+# Docker Engine repository definition, for the dnf based distributions.
+tpot_docker_repo_url: ''
+
+# Distributions that do not package grc install it from a release RPM.
+tpot_grc_rpm_url: ''
+
+# Distributions that do not package the micro editor fetch it from getmic.ro.
+tpot_install_micro_from_source: false
+
+# Package providing crontab. Upstream installs a cron implementation as part of
+# its recommended packages on the Debian family and Fedora, but not on
+# AlmaLinux, RHEL, Rocky or openSUSE -- even though it schedules a cron job on
+# all of them, leaving that job with nothing to run it.
+tpot_cron_package: cronie
+
+# What 03_prep_system.yml actually installs. Kept as a separate list from
+# tpot_recommended_packages so that variable stays a faithful mirror of
+# upstream's list for each distribution and can be diffed against it, while the
+# role still installs the cron package upstream omits. Ansible templates
+# variables lazily, so this resolves after tasks/main.yml has loaded the
+# distribution file and picks up its values, not the fallbacks below.
+# `unique` because the Debian family and Fedora already carry their cron
+# package in upstream's own list, so the append would otherwise duplicate it.
+tpot_packages: "{{ (tpot_recommended_packages + [tpot_cron_package]) | unique }}"

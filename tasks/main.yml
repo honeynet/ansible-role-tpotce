@@ -10,6 +10,19 @@
 - name: Support Check
   ansible.builtin.include_tasks: 02_support_check.yml
 
+# Package lists and repository URLs are kept out of the tasks. Matching on the
+# distribution first lets AlmaLinux, Fedora, RHEL and Rocky each keep their own
+# list while Debian / Raspbian / Ubuntu and openSUSE fall back to their family.
+- name: Load distribution specific variables
+  ansible.builtin.include_vars: "{{ lookup('ansible.builtin.first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+      paths:
+        - "{{ role_path }}/vars"
+
 - name: Prep System
   ansible.builtin.include_tasks: 03_prep_system.yml
 
