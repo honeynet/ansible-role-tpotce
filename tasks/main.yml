@@ -1,4 +1,9 @@
 ---
+# The task order below mirrors the play order of the upstream installer,
+# telekom-security/tpotce -> installer/install/tpot.yml.
+#
+# Note: unlike upstream, this role does not refuse to run as root.
+
 - name: Bootstrap Python
   ansible.builtin.include_tasks: 01_bootstrap_python.yml
 
@@ -14,14 +19,18 @@
 - name: Install Docker
   ansible.builtin.include_tasks: 05_install_docker.yml
 
-- name: Config System
-  ansible.builtin.include_tasks: 06_config_system.yml
-
-- name: Setup tpot
-  ansible.builtin.include_tasks: 07_setup_tpot.yml
-
+# Creates the tpot group, so it must run before 08_config_system.yml adds
+# the current user to it.
 - name: Setup System
-  ansible.builtin.include_tasks: 08_setup_system.yml
+  ansible.builtin.include_tasks: 06_setup_system.yml
 
 - name: Restart Services
-  ansible.builtin.include_tasks: 09_restart_services.yml
+  ansible.builtin.include_tasks: 07_restart_services.yml
+
+# Clones the T-Pot repository, so it must run before anything that reads
+# from or writes into it.
+- name: Config System
+  ansible.builtin.include_tasks: 08_config_system.yml
+
+- name: Setup tpot
+  ansible.builtin.include_tasks: 09_setup_tpot.yml

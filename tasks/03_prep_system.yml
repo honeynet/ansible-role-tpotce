@@ -4,9 +4,9 @@
 ############################################################
 
 - name: Syncing clocks (All)
-  shell: "hwclock --hctosys"
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
-  ignore_errors: true
+  ansible.builtin.command: "hwclock --hctosys"
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  failed_when: false
   tags:
     - "AlmaLinux"
     - "Debian"
@@ -18,7 +18,7 @@
     - "Ubuntu"
 
 - name: Install recommended packages (Debian, Raspbian, Ubuntu)
-  package:
+  ansible.builtin.package:
     name:
       - apache2-utils
       - bash-completion
@@ -35,8 +35,8 @@
       - vim
       - wget
     state: latest
-    update_cache: yes
-  when: ansible_distribution in ["Debian", "Raspbian", "Ubuntu"]
+    update_cache: true
+  when: ansible_facts['distribution'] in ["Debian", "Raspbian", "Ubuntu"]
   tags:
     - "Debian"
     - "Raspbian"
@@ -47,13 +47,13 @@
     name: 'https://github.com/kriipke/grc/releases/download/1.13.8/grc-1.13.8-1.el7.noarch.rpm'
     disable_gpg_check: true
     state: present
-  when: ansible_distribution in ["AlmaLinux", "Rocky"]
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
   tags:
     - "AlmaLinux"
     - "Rocky"
 
 - name: Install recommended packages (AlmaLinux, Rocky)
-  package:
+  ansible.builtin.package:
     name:
       - bash-completion
       - ca-certificates
@@ -69,17 +69,19 @@
       - vim
       - wget
     state: latest
-    update_cache: yes
-  when: ansible_distribution in ["AlmaLinux", "Rocky"]
+    update_cache: true
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
   tags:
     - "AlmaLinux"
     - "Rocky"
 
 - name: Download and install micro editor (AlmaLinux, openSUSE Tumbleweed, RHEL, Rocky)
-  shell: "curl https://getmic.ro | bash && mv micro /usr/bin"
-  args:
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      curl https://getmic.ro | bash && mv micro /usr/bin
     executable: /bin/bash
-  when: ansible_distribution in ["AlmaLinux", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+  when: ansible_facts['distribution'] in ["AlmaLinux", "openSUSE Tumbleweed", "RedHat", "Rocky"]
   tags:
     - "AlmaLinux"
     - "openSUSE Tumbleweed"
@@ -87,7 +89,7 @@
     - "Rocky"
 
 - name: Install recommended packages (Fedora)
-  package:
+  ansible.builtin.package:
     name:
       - bash-completion
       - ca-certificates
@@ -104,13 +106,13 @@
       - vim
       - wget
     state: latest
-    update_cache: yes
-  when: ansible_distribution in ["Fedora"]
+    update_cache: true
+  when: ansible_facts['distribution'] in ["Fedora"]
   tags:
     - "Fedora"
 
 - name: Remove conflicting packages (openSUSE Tumbleweed)
-  package:
+  ansible.builtin.package:
     name:
       - cups
       - net-tools
@@ -118,13 +120,13 @@
       - yast2-auth-client
       - yast2-auth-user
     state: absent
-    update_cache: yes
-  when: ansible_distribution in ["openSUSE Tumbleweed"]
+    update_cache: true
+  when: ansible_facts['distribution'] in ["openSUSE Tumbleweed"]
   tags:
     - "openSUSE Tumbleweed"
 
 - name: Install recommended packages (openSUSE Tumbleweed)
-  package:
+  ansible.builtin.package:
     name:
       - apache2-utils
       - bash-completion
@@ -138,7 +140,7 @@
       - vim
       - wget
     state: latest
-    update_cache: yes
-  when: ansible_distribution in ["openSUSE Tumbleweed"]
+    update_cache: true
+  when: ansible_facts['distribution'] in ["openSUSE Tumbleweed"]
   tags:
     - "openSUSE Tumbleweed"

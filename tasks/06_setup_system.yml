@@ -4,11 +4,11 @@
 ######################################################
 
 - name: Create T-Pot group (All)
-  group:
+  ansible.builtin.group:
     name: tpot
     gid: 2000
     state: present
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+  when: ansible_facts['distribution'] in tpot_supported_distributions
   tags:
     - "AlmaLinux"
     - "Debian"
@@ -20,14 +20,14 @@
     - "Ubuntu"
 
 - name: Create T-Pot user (All)
-  user:
+  ansible.builtin.user:
     name: tpot
     uid: 2000
     system: yes
     shell: /bin/false
     home: /nonexistent
     group: tpot
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+  when: ansible_facts['distribution'] in tpot_supported_distributions
   tags:
     - "AlmaLinux"
     - "Debian"
@@ -39,12 +39,13 @@
     - "Ubuntu"
 
 - name: Ensure vm.max_map_count is set (All)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/sysctl.conf
     line: "vm.max_map_count=262144"
     state: present
-    create: yes
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+    create: true
+    mode: '0644'
+  when: ansible_facts['distribution'] in tpot_supported_distributions
   tags:
     - "AlmaLinux"
     - "Debian"
@@ -56,28 +57,29 @@
     - "Ubuntu"
 
 - name: Disable ssh.socket unit (Ubuntu)
-  systemd:
+  ansible.builtin.systemd:
     name: ssh.socket
     state: stopped
     enabled: false
-  when: ansible_distribution in ["Ubuntu"]
+  when: ansible_facts['distribution'] in ["Ubuntu"]
   tags:
     - "Ubuntu"
 
 - name: Remove ssh.socket.conf file (Ubuntu)
-  file:
+  ansible.builtin.file:
     path: /etc/systemd/system/ssh.service.d/00-socket.conf
     state: absent
-  when: ansible_distribution in ["Ubuntu"]
+  when: ansible_facts['distribution'] in ["Ubuntu"]
   tags:
     - "Ubuntu"
+  notify: Restart SSH (All)
 
 - name: Comment out Port(s) in sshd_config, can cause port conflicts on deploy (AlmaLinux, Debian, Fedora, openSUSE Tumbleweed, Raspbian, RHEL, Rocky, Ubuntu)
   ansible.builtin.replace:
     path: /etc/ssh/sshd_config
     regexp: '^(Port (?!64295$)[0-9]+)'
     replace: '# \1'
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+  when: ansible_facts['distribution'] in tpot_supported_distributions
   tags:
     - "AlmaLinux"
     - "Debian"
@@ -87,13 +89,14 @@
     - "RedHat"
     - "Rocky"
     - "Ubuntu"
+  notify: Restart SSH (All)
 
 - name: Change SSH Port to 64295 (AlmaLinux, Debian, Fedora, Raspbian, RHEL, Rocky, Ubuntu)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config
     line: "Port 64295"
     insertafter: EOF
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
   tags:
     - "AlmaLinux"
     - "Debian"
@@ -102,46 +105,51 @@
     - "RedHat"
     - "Rocky"
     - "Ubuntu"
+  notify: Restart SSH (All)
 
 - name: Change SSH Port to 64295 (openSUSE Tumbleweed)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/ssh/sshd_config.d/port.conf
     line: "Port 64295"
-    create: yes
-  when: ansible_distribution in ["openSUSE Tumbleweed"]
+    create: true
+    mode: '0600'
+  when: ansible_facts['distribution'] in ["openSUSE Tumbleweed"]
   tags:
     - "openSUSE Tumbleweed"
+  notify: Restart SSH (All)
 
 - name: Add T-Pot SSH port to Firewall (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
-  firewalld:
+  ansible.posix.firewalld:
     port: 64295/tcp
     permanent: yes
     state: enabled
-  when: ansible_distribution in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
   tags:
     - "AlmaLinux"
     - "Fedora"
     - "openSUSE Tumbleweed"
     - "RedHat"
     - "Rocky"
+  notify: Restart Firewalld (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
 
 - name: Set T-Pot default target to ACCEPT (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
-  firewalld:
+  ansible.posix.firewalld:
     zone: public
     target: ACCEPT
     permanent: yes
     state: enabled
-  when: ansible_distribution in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
   tags:
     - "AlmaLinux"
     - "Fedora"
     - "openSUSE Tumbleweed"
     - "RedHat"
     - "Rocky"
+  notify: Restart Firewalld (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
 
 - name: Load kernel modules (AlmaLinux, Fedora, RHEL, Rocky)
-  command: modprobe -v iptable_filter
-  when: ansible_distribution in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+  ansible.builtin.command: modprobe -v iptable_filter
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
   tags:
     - "AlmaLinux"
     - "Fedora"
@@ -149,23 +157,29 @@
     - "Rocky"
 
 - name: Update iptables.conf (AlmaLinux, Fedora, RHEL, Rocky)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/modules-load.d/iptables.conf
     line: iptable_filter
-    create: yes
-  when: ansible_distribution in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+    create: true
+    mode: '0644'
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
   tags:
     - "AlmaLinux"
     - "Fedora"
     - "RedHat"
     - "Rocky"
 
+# Guarded on the SELinux fact rather than run unconditionally: where SELinux
+# is disabled there is no /etc/selinux/config to edit and nothing to relax, and
+# `setenforce` exits 1 with "SELinux is disabled", which would abort the run.
 - name: Set SELinux config to permissive (AlmaLinux, Fedora, RHEL, Rocky)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/selinux/config
     regexp: '^SELINUX='
     line: 'SELINUX=permissive'
-  when: ansible_distribution in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+  when:
+    - ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+    - ansible_facts['selinux'].status | default('disabled') != 'disabled'
   tags:
     - "AlmaLinux"
     - "Fedora"
@@ -173,8 +187,10 @@
     - "Rocky"
 
 - name: Set SELinux to permissive (AlmaLinux, Fedora, RHEL, Rocky)
-  command: "setenforce Permissive"
-  when: ansible_distribution in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+  ansible.builtin.command: "setenforce Permissive"
+  when:
+    - ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+    - ansible_facts['selinux'].status | default('disabled') != 'disabled'
   tags:
     - "AlmaLinux"
     - "Fedora"
@@ -182,40 +198,44 @@
     - "Rocky"
 
 - name: Stop Resolved (Fedora, RHEL, Ubuntu)
-  service:
+  ansible.builtin.service:
     name: systemd-resolved
     state: stopped
-  when: ansible_distribution in ["Fedora", "RedHat", "Ubuntu"]
+  when: ansible_facts['distribution'] in ["Fedora", "RedHat", "Ubuntu"]
   tags:
     - "Fedora"
     - "RedHat"
     - "Ubuntu"
 
 - name: Copy resolved.conf to /etc/systemd (Fedora)
-  copy:
+  ansible.builtin.copy:
     src: /usr/lib/systemd/resolved.conf
     dest: /etc/systemd/resolved.conf
-  when: ansible_distribution in ["Fedora"]
-  ignore_errors: true
+    remote_src: true
+    mode: '0644'
+  when: ansible_facts['distribution'] in ["Fedora"]
+  failed_when: false
   tags:
     - "Fedora"
 
 - name: Copy resolv.conf to /etc/systemd (RHEL)
-  copy:
+  ansible.builtin.copy:
     src: /usr/lib/systemd/resolv.conf
     dest: /etc/systemd/resolv.conf
-  when: ansible_distribution in ["RedHat"]
-  ignore_errors: true
+    remote_src: true
+    mode: '0644'
+  when: ansible_facts['distribution'] in ["RedHat"]
+  failed_when: false
   tags:
     - "RedHat"
 
 - name: Modify DNSStubListener in resolved.conf (Fedora, Ubuntu)
-  lineinfile:
+  ansible.builtin.lineinfile:
     path: /etc/systemd/resolved.conf
     regexp: '^.*DNSStubListener=.*'
     line: 'DNSStubListener=no'
     state: present
-  when: ansible_distribution in ["Fedora", "Ubuntu"]
+  when: ansible_facts['distribution'] in ["Fedora", "Ubuntu"]
   tags:
     - "Fedora"
     - "Ubuntu"

@@ -1,20 +1,16 @@
 ---
-honeypot_list:
-  - ciscoasa
-  - adbhoney
-  - conpot
-  - cowrie
-  - dionaea
-  - honeypy
-  - glutton
-  - heralding
-  - mailoney
-  - medpot
-  - p0f
-  - rdpy
-  - suricata
-  - tanner
-  - fatt
-logrotate_days: 30
-filebeat_version: "7.11.1"
-tpot_version: "2006"
+# The user T-Pot is installed for. The repository is cloned on this user's
+# behalf and the user is added to the `docker` and `tpot` groups.
+tpot_user: "{{ ansible_facts['user_id'] }}"
+tpot_user_home: "{{ ansible_facts['user_dir'] }}"
+
+# Where the T-Pot sources live. Upstream clones into the invoking user's home
+# directory, which ties the installation to one account: it moves when the role
+# is run as a different user, and it is orphaned if that account is removed.
+# /opt is the conventional location for add-on software, so the path is the
+# same on every host regardless of who ran the role.
+tpot_dir: /opt/tpotce
+
+# Upstream repository the T-Pot sources are cloned from.
+tpot_repo: "https://github.com/telekom-security/tpotce"
+tpot_repo_version: master

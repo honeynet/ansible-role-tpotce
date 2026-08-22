@@ -1,0 +1,4 @@
+---
+collections:
+  # ansible.posix.firewalld, used on the dnf based distributions.
+  - name: ansible.posix

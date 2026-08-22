@@ -4,7 +4,8 @@
 ################################
 
 - name: Get distribution name (All)
-  raw: awk -F= '/^NAME/{print $2}' /etc/os-release | tr -d '"' | cut -d " " -f1
+  ansible.builtin.raw: awk -F= '/^NAME/{print $2}' /etc/os-release | tr -d '"' | cut -d " " -f1
+  changed_when: false
   register: my_distribution
   tags:
     - "AlmaLinux"
@@ -17,7 +18,8 @@
     - "Ubuntu"
 
 - name: Check if python3 is installed (All)
-  raw: echo $(command -v python3)
+  ansible.builtin.raw: echo $(command -v python3)
+  changed_when: false
   register: my_python3
   tags:
     - "AlmaLinux"
@@ -30,7 +32,7 @@
     - "Ubuntu"
 
 - name: Add python package (Debian, Raspbian, Ubuntu)
-  raw: |
+  ansible.builtin.raw: |
     apt update
     apt -y install python3
   when: my_distribution.stdout | trim in ["Debian", "Raspbian", "Ubuntu"] and my_python3.stdout | trim == ""
@@ -40,7 +42,7 @@
     - "Ubuntu"
 
 - name: Add python package (Alma, Fedora, RHEL, Rocky)
-  raw: |
+  ansible.builtin.raw: |
     dnf -y --refresh install python3
   when: my_distribution.stdout | trim in ["AlmaLinux", "Fedora", "RedHat", "Rocky"] and my_python3.stdout | trim == ""
   tags:
@@ -50,7 +52,7 @@
     - "Rocky"
 
 - name: Add python package (openSUSE Tumbleweed)
-  raw: |
+  ansible.builtin.raw: |
     zypper refresh
     zypper -y install python3
   when: my_distribution.stdout | trim in ["AlmaLinux", "Fedora", "Rocky"] and my_python3.stdout | trim == ""

@@ -10,13 +10,13 @@
 #     success_msg: "Running as user: {{ ansible_user_id }}."
 
 - name: Check if running as tpot (All)
-  assert:
-    that: ansible_user_id != 'tpot'
+  ansible.builtin.assert:
+    that: ansible_facts['user_id'] != 'tpot'
     fail_msg: "Reserved username `tpot` detected."
-    success_msg: "Running as user: {{ ansible_user_id }}."
+    success_msg: "Running as user: {{ ansible_facts['user_id'] }}."
 
 - name: Check if supported distribution (All)
-  assert:
-    that: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "openSUSE Tumbleweed", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
-    fail_msg: "T-Pot is not supported on this platform: {{ ansible_distribution }}."
-    success_msg: "T-Pot will now install on {{ ansible_distribution }}."
+  ansible.builtin.assert:
+    that: ansible_facts['distribution'] in tpot_supported_distributions
+    fail_msg: "T-Pot is not supported on this platform: {{ ansible_facts['distribution'] }}."
+    success_msg: "T-Pot will now install on {{ ansible_facts['distribution'] }}."

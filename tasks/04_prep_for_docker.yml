@@ -4,7 +4,7 @@
 #####################################
 
 - name: Remove distribution based Docker packages and podman-docker (AlmaLinux, Debian, Fedora, Raspbian, RHEL, Rocky, Ubuntu)
-  package:
+  ansible.builtin.package:
     name:
       - docker
       - docker-engine
@@ -14,8 +14,8 @@
       - podman-docker
       - podman
     state: absent
-    update_cache: yes
-  when: ansible_distribution in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
+    update_cache: true
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Debian", "Fedora", "Raspbian", "RedHat", "Rocky", "Ubuntu"]
   tags:
     - "AlmaLinux"
     - "Debian"
@@ -26,76 +26,114 @@
     - "Ubuntu"
 
 - name: Add folder for Docker Engine GPG key (Debian, Raspbian, Ubuntu)
-  file:
+  ansible.builtin.file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
-  when: ansible_distribution in ["Debian", "Raspbian", "Ubuntu"]
+  when: ansible_facts['distribution'] in ["Debian", "Raspbian", "Ubuntu"]
   tags:
     - "Debian"
     - "Raspbian"
     - "Ubuntu"
 
 - name: Download Docker Engine GPG key (Debian, Raspbian, Ubuntu)
-  get_url:
-    url: https://download.docker.com/linux/{{ ansible_distribution | lower }}/gpg
+  ansible.builtin.get_url:
+    url: https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}/gpg
     dest: /etc/apt/keyrings/docker
     mode: '0755'
-  when: ansible_distribution in ["Debian", "Raspbian", "Ubuntu"]
+  when: ansible_facts['distribution'] in ["Debian", "Raspbian", "Ubuntu"]
   tags:
     - "Debian"
     - "Raspbian"
     - "Ubuntu"
 
 - name: Decrypt Docker Engine GPG key (Debian, Raspbian, Ubuntu)
-  shell: gpg --dearmor /etc/apt/keyrings/docker
+  ansible.builtin.command: gpg --dearmor /etc/apt/keyrings/docker
   args:
     creates: /etc/apt/keyrings/docker.gpg
-  when: ansible_distribution in ["Debian", "Raspbian", "Ubuntu"]
+  when: ansible_facts['distribution'] in ["Debian", "Raspbian", "Ubuntu"]
   tags:
     - "Debian"
     - "Raspbian"
     - "Ubuntu"
 
+# Upstream uses apt_repository, which ansible-core deprecated in favour of
+# deb822_repository and removes in 2.25. The repository definition is the same,
+# expressed as discrete fields instead of a one-line `deb ...` string.
 - name: Add Docker Engine repository (Debian, Raspbian, Ubuntu)
-  apt_repository:
-    filename: docker
-    repo: "deb [arch={{ ansible_architecture | replace('aarch64', 'arm64') | replace('x86_64', 'amd64') }} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/{{ ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
+  ansible.builtin.deb822_repository:
+    name: docker
+    types: [deb]
+    uris: "https://download.docker.com/linux/{{ ansible_facts['distribution'] | lower }}"
+    suites: "{{ ansible_facts['distribution_release'] }}"
+    components: [stable]
+    architectures: "{{ ansible_facts['architecture'] | replace('aarch64', 'arm64') | replace('x86_64', 'amd64') }}"
+    signed_by: /etc/apt/keyrings/docker.gpg
     state: present
-    update_cache: yes
-  when: ansible_distribution in ["Debian", "Raspbian", "Ubuntu"]
+    enabled: true
+    # The module needs the python3-debian library on the target and will not
+    # run without it. Letting it install its own dependency keeps the package
+    # lists in vars/ matching upstream's exactly.
+    install_python_debian: true
+  register: tpot_docker_repo
+  when: ansible_facts['distribution'] in ["Debian", "Raspbian", "Ubuntu"]
+  tags:
+    - "Debian"
+    - "Raspbian"
+    - "Ubuntu"
+
+# deb822_repository writes docker.sources; a host provisioned by an earlier
+# version of this role still has the docker.list apt_repository left behind,
+# and apt warns about the duplicate entry.
+- name: Remove the superseded Docker repository list file (Debian, Raspbian, Ubuntu)
+  ansible.builtin.file:
+    path: /etc/apt/sources.list.d/docker.list
+    state: absent
+  when: ansible_facts['distribution'] in ["Debian", "Raspbian", "Ubuntu"]
+  tags:
+    - "Debian"
+    - "Raspbian"
+    - "Ubuntu"
+
+# apt_repository refreshed the cache itself; deb822_repository does not.
+- name: Update apt cache for the Docker repository (Debian, Raspbian, Ubuntu)
+  ansible.builtin.apt:
+    update_cache: true
+  when:
+    - ansible_facts['distribution'] in ["Debian", "Raspbian", "Ubuntu"]
+    - tpot_docker_repo is changed
   tags:
     - "Debian"
     - "Raspbian"
     - "Ubuntu"
 
 - name: Add Docker repository (Fedora)
-  shell: |
+  ansible.builtin.shell: |
     if [ "$(dnf repolist docker-ce-stable)" == "" ];
       then
         dnf -y config-manager addrepo --from-repofile=https://download.docker.com/linux/fedora/docker-ce.repo
     fi
-  when: ansible_distribution in ["Fedora"]
+  when: ansible_facts['distribution'] in ["Fedora"]
   tags:
     - "Fedora"
 
 - name: Add Docker repository (RHEL)
-  shell: |
+  ansible.builtin.shell: |
     if [ "$(dnf repolist docker-ce-stable)" == "" ];
       then
         dnf -y config-manager addrepo --from-repofile=https://download.docker.com/linux/rhel/docker-ce.repo
     fi
-  when: ansible_distribution in ["RedHat"]
+  when: ansible_facts['distribution'] in ["RedHat"]
   tags:
     - "RedHat"
 
 - name: Add Docker repository (AlmaLinux, Rocky)
-  shell: |
+  ansible.builtin.shell: |
     if [ "$(dnf repolist docker-ce-stable)" == "" ];
       then
         dnf -y config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
     fi
-  when: ansible_distribution in ["AlmaLinux", "Rocky"]
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Rocky"]
   tags:
     - "AlmaLinux"
     - "Rocky"
