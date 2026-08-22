@@ -1,6 +1,72 @@
 ---
 # Internal role constants. Override the variables in defaults/main.yml instead.
 
+# Path to upstream's service catalogue inside the cloned repository. Every
+# service definition in the generated docker-compose.yml is taken verbatim
+# from this file, which is why the role never has to carry its own copy of
+# upstream's compose YAML.
+tpot_services_catalogue: "{{ tpot_dir }}/compose/tpot_services.yml"
+
+# Always included, regardless of `tpot_services`. Upstream's customizer.py
+# does the same for tpotinit; it also force-includes logstash, which this
+# role deliberately does not.
+tpot_required_services:
+  - tpotinit
+
+# Never included. This role builds sensor-only configurations: no web UI, no
+# local Elasticsearch/Kibana and no local Logstash. Logs leave the sensor via
+# filebeat instead.
+#
+# Because none of these can ever be selected, upstream customizer.py's
+# kibana -> elasticsearch, spiderfoot -> nginx and map_* -> elasticsearch +
+# nginx dependency rules are unreachable here and are not implemented.
+tpot_excluded_services:
+  - elasticsearch
+  - kibana
+  - logstash
+  - map_data
+  - map_redis
+  - map_web
+  - nginx
+  - spiderfoot
+
+# Snare / Tanner only works when the whole group runs. Selecting any one of
+# these pulls in the rest, matching customizer.py's enforce_dependencies().
+tpot_tanner_services:
+  - snare
+  - tanner
+  - tanner_api
+  - tanner_phpox
+  - tanner_redis
+
+# honeytrap and glutton both grab unclaimed ports via NFQUEUE and cannot run
+# at the same time. customizer.py always votes in favour of honeytrap.
+tpot_nfq_services:
+  - glutton
+  - honeytrap
+
+# Services this role defines itself, i.e. that are not part of upstream's
+# catalogue. Rendered into docker-compose.yml when selected.
+tpot_local_services:
+  filebeat:
+    container_name: filebeat
+    restart: always
+    depends_on:
+      tpotinit:
+        condition: service_healthy
+    env_file:
+      - "${TPOT_DATA_PATH}/tpot/etc/compose/elk_environment"
+    image: "{{ filebeat_image }}:{{ filebeat_version }}"
+    volumes:
+      - "${TPOT_DATA_PATH}:/data:ro"
+      - "{{ filebeat_path }}/conf.d:/usr/share/filebeat/conf.d:ro"
+      - "{{ filebeat_path }}/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro"
+
+# Written by tpotinit at runtime, but docker compose resolves `env_file`
+# while it parses the configuration, so it has to exist before the first
+# `docker compose up`.
+tpot_elk_environment: "{{ tpot_data_path }}/tpot/etc/compose/elk_environment"
+
 tpot_supported_distributions:
   - AlmaLinux
   - Debian

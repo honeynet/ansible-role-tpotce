@@ -1,0 +1,202 @@
+---
+##################################################
+# T-Pot - Generate docker-compose.yml            #
+##################################################
+#
+# This is the role's equivalent of upstream's compose/customizer.py. Rather
+# than carrying a copy of upstream's service definitions, it reads
+# compose/tpot_services.yml straight out of the cloned repository and filters
+# it, so the generated configuration tracks upstream automatically.
+#
+# customizer.py asks interactively which services to include; here the answer
+# comes from the `tpot_services` variable. Everything else it does --
+# force-including tpotinit, enforcing the Snare/Tanner group, dropping glutton
+# in favour of honeytrap, pruning unused networks and reporting host port
+# conflicts -- is reproduced below.
+
+- name: Read upstream service catalogue (All)
+  ansible.builtin.slurp:
+    src: "{{ tpot_services_catalogue }}"
+  register: tpot_catalogue_raw
+
+- name: Parse upstream service catalogue (All)
+  ansible.builtin.set_fact:
+    tpot_catalogue: "{{ tpot_catalogue_raw.content | b64decode | from_yaml }}"
+
+- name: Collect selectable services (All)
+  ansible.builtin.set_fact:
+    tpot_selectable_services: >-
+      {{ (tpot_catalogue.services | list | difference(tpot_excluded_services))
+         + (tpot_local_services | list) }}
+
+- name: Fail on unknown services (All)
+  ansible.builtin.assert:
+    that: tpot_services | difference(tpot_selectable_services) | difference(tpot_excluded_services) | length == 0
+    fail_msg: >-
+      Unknown T-Pot service(s):
+      {{ tpot_services | difference(tpot_selectable_services) | difference(tpot_excluded_services) | join(', ') }}.
+      Selectable services are:
+      {{ tpot_selectable_services | sort | join(', ') }}.
+    success_msg: "All requested services are known."
+    quiet: true
+
+- name: Fail on services this role cannot deploy (All)
+  ansible.builtin.assert:
+    that: tpot_services | intersect(tpot_excluded_services) | length == 0
+    fail_msg: >-
+      This role builds sensor-only configurations and cannot deploy:
+      {{ tpot_services | intersect(tpot_excluded_services) | join(', ') }}.
+      Logs are shipped off the sensor with filebeat instead of being indexed
+      locally, so the web UI and the Elasticsearch / Logstash / Kibana stack
+      are not available.
+    success_msg: "No excluded services were requested."
+    quiet: true
+
+# customizer.py: enforce_dependencies()
+- name: Resolve service dependencies (All)
+  ansible.builtin.set_fact:
+    tpot_resolved_services: >-
+      {%- set selected = tpot_required_services | union(tpot_services) -%}
+      {%- if selected | intersect(tpot_tanner_services) | length > 0 -%}
+        {%- set selected = selected | union(tpot_tanner_services) -%}
+      {%- endif -%}
+      {%- if selected | intersect(tpot_nfq_services) | length == tpot_nfq_services | length -%}
+        {%- set selected = selected | difference(['glutton']) -%}
+      {%- endif -%}
+      {{ selected }}
+
+- name: Report enforced Snare / Tanner services (All)
+  ansible.builtin.debug:
+    msg: "For Snare / Tanner to work all required services have been added: {{ tpot_tanner_services | join(', ') }}."
+  when: tpot_resolved_services | intersect(tpot_tanner_services) | length > 0
+        and tpot_services | intersect(tpot_tanner_services) | length < tpot_tanner_services | length
+
+- name: Report dropped glutton (All)
+  ansible.builtin.debug:
+    msg: "Honeytrap and Glutton cannot be active at the same time. Glutton has been removed from your configuration."
+  when: tpot_services | intersect(tpot_nfq_services) | length == tpot_nfq_services | length
+
+# Filtering the catalogue rather than rebuilding it keeps upstream's service
+# order, which makes the generated file easy to diff against upstream.
+- name: Select service definitions (All)
+  ansible.builtin.set_fact:
+    tpot_selected_services: >-
+      {{ tpot_catalogue.services | dict2items
+         | selectattr('key', 'in', tpot_resolved_services)
+         | items2dict
+         | combine(tpot_local_services | dict2items
+                   | selectattr('key', 'in', tpot_resolved_services)
+                   | items2dict) }}
+
+# tpot_services.yml lists every port a honeypot is able to bind, and leaves it
+# to the operator to resolve the resulting collisions -- customizer.py only
+# warns about them. Upstream's own prebuilt editions do resolve them, by
+# commenting out the losing side, and they are otherwise byte for byte
+# identical to the catalogue. Reusing an edition's port lists therefore
+# inherits upstream's conflict resolution instead of hardcoding a port table
+# here that would drift on the next release.
+- name: Read port reference edition (All)
+  ansible.builtin.slurp:
+    src: "{{ tpot_dir }}/compose/{{ tpot_port_reference_edition }}.yml"
+  register: tpot_reference_raw
+  when: tpot_port_reference_edition | length > 0
+
+- name: Parse port reference edition (All)
+  ansible.builtin.set_fact:
+    tpot_reference_services: >-
+      {{ ((tpot_reference_raw.content | b64decode | from_yaml).services | default({}))
+         if tpot_port_reference_edition | length > 0 else {} }}
+
+- name: Apply port de-confliction (All)
+  ansible.builtin.set_fact:
+    tpot_compose_services_json: >-
+      {%- set out = {} -%}
+      {%- for name, service in tpot_selected_services.items() -%}
+        {%- if name in tpot_port_overrides -%}
+          {%- set ports = tpot_port_overrides[name] -%}
+        {%- elif name in tpot_reference_services and 'ports' in service -%}
+          {%- set ports = tpot_reference_services[name].ports | default([], true) -%}
+        {%- else -%}
+          {%- set ports = service.ports | default(none) -%}
+        {%- endif -%}
+        {%- if ports is none -%}
+          {%- set _ = out.update({name: service}) -%}
+        {%- else -%}
+          {%- set _ = out.update({name: service | combine({'ports': ports})}) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ out | to_json }}
+
+- name: Finalise service definitions (All)
+  ansible.builtin.set_fact:
+    tpot_compose_services: "{{ tpot_compose_services_json | from_json }}"
+
+# customizer.py: remove_unused_networks()
+- name: Select networks in use (All)
+  ansible.builtin.set_fact:
+    tpot_compose_networks: >-
+      {%- set used = [] -%}
+      {%- for service in tpot_compose_services.values() -%}
+        {%- for network in service.networks | default([]) -%}
+          {%- set _ = used.append(network) -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ tpot_catalogue.networks | default({}) | dict2items
+         | selectattr('key', 'in', used | unique) | items2dict }}
+
+# customizer.py: check_port_conflicts(). The host port is the second to last
+# colon separated field for every mapping format upstream uses
+# ("5555:5555", "5000:5000/udp" and "127.0.0.1:64298:9200"), and conflicts are
+# tracked per protocol.
+- name: Collect published host ports (All)
+  ansible.builtin.set_fact:
+    tpot_host_ports: >-
+      {%- set bindings = [] -%}
+      {%- for name, service in tpot_compose_services.items() -%}
+        {%- for entry in service.ports | default([]) -%}
+          {%- set spec = entry | string -%}
+          {%- set mapping = spec.split('/')[0].split(':') -%}
+          {%- if mapping | length > 1 -%}
+            {%- set proto = spec.split('/')[1] if '/' in spec else 'tcp' -%}
+            {%- set _ = bindings.append({'service': name, 'port': mapping[-2] ~ '/' ~ proto}) -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endfor -%}
+      {{ bindings | to_json }}
+
+- name: Detect conflicting host ports (All)
+  ansible.builtin.set_fact:
+    tpot_port_conflicts: >-
+      {%- set bindings = tpot_host_ports | from_json -%}
+      {%- set ports = bindings | map(attribute='port') | list -%}
+      {%- set conflicts = [] -%}
+      {%- for port in ports | unique -%}
+        {%- set claimants = bindings | selectattr('port', 'equalto', port)
+                                     | map(attribute='service') | list -%}
+        {%- if claimants | length > 1 -%}
+          {%- set _ = conflicts.append(port ~ ' claimed by ' ~ (claimants | join(', '))) -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {{ conflicts | to_json }}
+
+# Upstream only warns here because a human reviews the result before using it.
+# A role has no such reviewer, and a conflicting configuration would fail at
+# `docker compose up`, so this is a hard failure.
+- name: Fail on conflicting host ports (All)
+  ansible.builtin.assert:
+    that: tpot_port_conflicts | from_json | length == 0
+    fail_msg: >-
+      Port conflict(s) detected:
+      {{ tpot_port_conflicts | from_json | join('; ') }}.
+      Resolve them by dropping one of the conflicting services from
+      `tpot_services`, or by giving one of them a non-conflicting port list
+      via `tpot_port_overrides`.
+    success_msg: "No port conflicts detected."
+    quiet: true
+
+- name: Generate docker-compose.yml (All)
+  ansible.builtin.template:
+    src: tpot/tpot.yml.j2
+    dest: "{{ tpot_dir }}/docker-compose.yml"
+    owner: "{{ tpot_user }}"
+    mode: '0644'

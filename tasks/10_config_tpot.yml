@@ -1,0 +1,58 @@
+---
+###############################################
+# T-Pot - Configure the T-Pot config file     #
+###############################################
+#
+# Upstream's install.sh edits .env after the playbook has run. Only the keys
+# listed in `tpot_env` / `tpot_env_extra` are touched; everything else keeps
+# the value shipped in the cloned repository.
+
+- name: Check for T-Pot config file (All)
+  ansible.builtin.stat:
+    path: "{{ tpot_dir }}/.env"
+  register: tpot_env_file
+
+- name: Seed T-Pot config file from env.example (All)
+  ansible.builtin.copy:
+    src: "{{ tpot_dir }}/env.example"
+    dest: "{{ tpot_dir }}/.env"
+    remote_src: true
+    owner: "{{ tpot_user }}"
+    mode: '0644'
+  when: not tpot_env_file.stat.exists
+
+- name: Configure T-Pot config file (All)
+  ansible.builtin.lineinfile:
+    path: "{{ tpot_dir }}/.env"
+    regexp: "^#?\\s*{{ item.key | regex_escape }}="
+    line: "{{ item.key }}={{ item.value }}"
+    state: present
+  loop: "{{ tpot_env | combine(tpot_env_extra) | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+
+# tpotinit writes this file at container start, but docker compose resolves
+# `env_file` while parsing the configuration, so filebeat would abort the very
+# first `docker compose up` if the file were missing.
+- name: Create T-Pot data directories (All)
+  ansible.builtin.file:
+    path: "{{ tpot_elk_environment | dirname }}"
+    state: directory
+    owner: "{{ tpot_user }}"
+    group: tpot
+    mode: '0770'
+  when: "'filebeat' in tpot_services"
+
+- name: Create placeholder elk_environment for filebeat (All)
+  ansible.builtin.copy:
+    content: |
+      HONEY_UUID=
+      MY_EXTIP=
+      MY_INTIP=
+      MY_HOSTNAME={{ ansible_facts['hostname'] }}
+    dest: "{{ tpot_elk_environment }}"
+    force: false
+    owner: "{{ tpot_user }}"
+    group: tpot
+    mode: '0660'
+  when: "'filebeat' in tpot_services"

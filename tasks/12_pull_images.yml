@@ -1,0 +1,13 @@
+---
+############################
+# T-Pot - Pull images      #
+############################
+
+- name: Pull T-Pot container images (All)
+  become: true
+  ansible.builtin.command:
+    cmd: "docker compose -f {{ tpot_dir }}/docker-compose.yml pull"
+  # Pulling is idempotent in effect: images already present are left alone,
+  # and reporting a change on every run would make the role never converge.
+  changed_when: false
+  when: ansible_facts['distribution'] in tpot_supported_distributions
