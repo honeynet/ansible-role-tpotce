@@ -43,6 +43,13 @@ jobs:
 
   # AlmaLinux and openSUSE have no geerlingguy image, so they stay covered by
   # the `full` scenario on a virtual machine.
+  #
+  # These containers share the runner's kernel, which has the full xtables
+  # module set. `modprobe -n xt_addrtype` therefore succeeds on every distro
+  # here, including rockylinux10, so the nftables fallback path is never taken
+  # in this job -- what it does prove is that the probes are harmless on a
+  # kernel that does have the modules. The fallback itself needs the `full`
+  # scenario on an EL10 VM.
   molecule:
     name: Molecule (${{ matrix.distro }})
     runs-on: ubuntu-latest
@@ -57,6 +64,11 @@ jobs:
           - distro: ubuntu2404
             command: /lib/systemd/systemd
           - distro: rockylinux9
+            command: /usr/lib/systemd/systemd
+          # EL10 is what upstream now targets. Its kernel is also the reason
+          # for the nftables fallback in 06_setup_system.yml -- though that
+          # branch cannot actually trigger here, see the note below.
+          - distro: rockylinux10
             command: /usr/lib/systemd/systemd
           - distro: fedora42
             command: /usr/lib/systemd/systemd

@@ -40,6 +40,26 @@
         that: tpot_dir ~ '/docker-compose.yml' in (tpot_unit.content | b64decode)
         fail_msg: "tpot.service does not reference {{ tpot_dir }}/docker-compose.yml"
 
+    - name: IPv4 forwarding is persisted
+      ansible.builtin.slurp:
+        src: /etc/sysctl.conf
+      register: sysctl_conf
+
+    - name: Assert IPv4 forwarding was written to sysctl.conf
+      ansible.builtin.assert:
+        that: "'net.ipv4.ip_forward=1' in (sysctl_conf.content | b64decode)"
+        fail_msg: "net.ipv4.ip_forward=1 is missing from /etc/sysctl.conf"
+
+    - name: IPv4 forwarding is live
+      ansible.builtin.command: sysctl -n net.ipv4.ip_forward
+      changed_when: false
+      register: ip_forward
+
+    - name: Assert IPv4 forwarding is enabled now
+      ansible.builtin.assert:
+        that: ip_forward.stdout | trim == '1'
+        fail_msg: "IPv4 forwarding is not enabled, Docker would refuse to start"
+
     - name: SSH is configured for port 64295
       ansible.builtin.command: sshd -T
       changed_when: false

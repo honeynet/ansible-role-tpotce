@@ -56,6 +56,44 @@
     - "Rocky"
     - "Ubuntu"
 
+# Containers need IPv4 forwarding. Docker used to enable it itself; with the
+# nftables firewall backend it refuses to start instead, so it has to be set
+# here -- before 07_restart_services.yml brings Docker up.
+- name: Ensure IPv4 forwarding is enabled (All)
+  ansible.builtin.lineinfile:
+    path: /etc/sysctl.conf
+    line: "net.ipv4.ip_forward=1"
+    state: present
+    create: true
+    mode: '0644'
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+# The line above only takes effect on the next boot, but Docker is started
+# later in this same run. `changed_when: false` because the persistent change
+# is already reported by the task above; this only makes it live.
+- name: Enable IPv4 forwarding now (All)
+  ansible.builtin.command: sysctl -w net.ipv4.ip_forward=1
+  changed_when: false
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
 - name: Disable ssh.socket unit (Ubuntu)
   ansible.builtin.systemd:
     name: ssh.socket
@@ -147,8 +185,16 @@
     - "Rocky"
   notify: Restart Firewalld (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
 
-- name: Load kernel modules (AlmaLinux, Fedora, RHEL, Rocky)
-  ansible.builtin.command: modprobe -v iptable_filter
+# RHEL 10 and its rebuilds ship a kernel without the legacy xtables modules,
+# where `modprobe iptable_filter` is fatal. Those systems provide `iptables` as
+# an nftables based frontend instead, which loads nf_tables on its own and
+# needs nothing preloaded. `-n` is a dry run: it reports whether the module
+# exists without loading it.
+- name: Look for the iptable_filter module (AlmaLinux, Fedora, RHEL, Rocky)
+  ansible.builtin.command: modprobe -n iptable_filter
+  register: tpot_iptable_filter
+  changed_when: false
+  failed_when: false
   when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
   tags:
     - "AlmaLinux"
@@ -156,18 +202,170 @@
     - "RedHat"
     - "Rocky"
 
+- name: Load kernel modules (AlmaLinux, Fedora, RHEL, Rocky)
+  ansible.builtin.command: modprobe -v iptable_filter
+  changed_when: false
+  when:
+    - ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+    - tpot_iptable_filter.rc | default(1) == 0
+  tags:
+    - "AlmaLinux"
+    - "Fedora"
+    - "RedHat"
+    - "Rocky"
+
+# Only where the module exists: systemd-modules-load logs a failure on every
+# boot for each entry it cannot find.
 - name: Update iptables.conf (AlmaLinux, Fedora, RHEL, Rocky)
   ansible.builtin.lineinfile:
     path: /etc/modules-load.d/iptables.conf
     line: iptable_filter
     create: true
     mode: '0644'
-  when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+  when:
+    - ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "RedHat", "Rocky"]
+    - tpot_iptable_filter.rc | default(1) == 0
   tags:
     - "AlmaLinux"
     - "Fedora"
     - "RedHat"
     - "Rocky"
+
+##############################################################################
+# Docker on kernels without the xtables extensions
+#
+# Docker's iptables backend needs them. RHEL 10 and its rebuilds ship a kernel
+# without, and dockerd then aborts with "Extension addrtype revision 0 not
+# supported, missing kernel module?" and cannot create its bridge network.
+# Docker Engine 28 and later can drive nftables directly instead.
+#
+# Note: `modprobe -n` asks the running kernel, so in a container this reports
+# on the *host* kernel. The whole block is therefore skipped in the container
+# based molecule scenario, and is covered by the `full` scenario on an EL10 VM.
+##############################################################################
+
+- name: Look for the xt_addrtype module (All)
+  ansible.builtin.command: modprobe -n xt_addrtype
+  register: tpot_xt_addrtype
+  changed_when: false
+  failed_when: false
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Look for the nftables firewall backend in dockerd (All, kernels without xtables)
+  ansible.builtin.command: dockerd --help
+  register: tpot_dockerd_help
+  changed_when: false
+  failed_when: false
+  when: tpot_xt_addrtype.rc | default(0) != 0
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Abort if Docker cannot manage the firewall on this kernel (All, kernels without xtables)
+  ansible.builtin.assert:
+    that: "'--firewall-backend' in tpot_dockerd_help.stdout | default('')"
+    fail_msg: >-
+      This kernel ships no xtables modules, so Docker cannot use its iptables
+      firewall backend, and this Docker Engine does not offer the nftables
+      backend either. A newer Docker Engine is required.
+    success_msg: "Docker will manage the firewall through nftables."
+  when: tpot_xt_addrtype.rc | default(0) != 0
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Create the Docker configuration directory (All, kernels without xtables)
+  ansible.builtin.file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: tpot_xt_addrtype.rc | default(0) != 0
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Look for an existing Docker configuration (All, kernels without xtables)
+  ansible.builtin.stat:
+    path: /etc/docker/daemon.json
+  register: tpot_docker_json
+  when: tpot_xt_addrtype.rc | default(0) != 0
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Read an existing Docker configuration (All, kernels without xtables)
+  ansible.builtin.slurp:
+    src: /etc/docker/daemon.json
+  register: tpot_docker_json_content
+  when: tpot_docker_json.stat.exists | default(false)
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+# Merged into any existing daemon.json so hand made settings survive.
+- name: Switch Docker to the nftables firewall backend (All, kernels without xtables)
+  ansible.builtin.copy:
+    dest: /etc/docker/daemon.json
+    content: "{{ tpot_docker_config | combine({'firewall-backend': 'nftables'}) | to_nice_json }}\n"
+    owner: root
+    group: root
+    mode: '0644'
+  vars:
+    tpot_docker_config: >-
+      {{ (tpot_docker_json_content.content | b64decode | from_json)
+         if tpot_docker_json.stat.exists | default(false) else {} }}
+  when: tpot_xt_addrtype.rc | default(0) != 0
+  notify: Restart Docker (All)
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
 
 # Guarded on the SELinux fact rather than run unconditionally: where SELinux
 # is disabled there is no /etc/selinux/config to edit and nothing to relax, and

@@ -36,3 +36,13 @@
     state: stopped
     enabled: true
   when: ansible_facts['distribution'] in tpot_supported_distributions
+
+# Only notified when /etc/docker/daemon.json is rewritten to switch the
+# firewall backend. 07_restart_services.yml flushes handlers before it ensures
+# Docker is running, so on a first install this simply starts the service that
+# 05_install_docker.yml stopped; on a re-run it picks the new backend up.
+- name: Restart Docker (All)
+  ansible.builtin.service:
+    name: docker
+    state: restarted
+  when: ansible_facts['distribution'] in tpot_supported_distributions

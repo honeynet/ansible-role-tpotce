@@ -119,6 +119,17 @@ instead of hardcoding a table that would drift. `tpot_port_overrides` patches th
 The template emits **no generation timestamp**, deliberately, so re-running against an unchanged
 configuration leaves `docker-compose.yml` untouched.
 
+### Kernels without xtables
+
+RHEL 10 and its rebuilds ship a kernel with no legacy xtables modules, which breaks two things
+`06_setup_system.yml` handles by probing rather than assuming: `modprobe iptable_filter` is fatal
+there (so it is gated behind a `modprobe -n` dry run), and Docker's iptables firewall backend
+cannot load `xt_addrtype` (so `/etc/docker/daemon.json` is merged — never overwritten — with
+`{"firewall-backend": "nftables"}` and Docker is restarted through a handler).
+
+The same file also sets `net.ipv4.ip_forward=1`, persisted and live. Docker used to enable
+forwarding itself; with the nftables backend it refuses to start instead.
+
 ### Handlers
 
 Firewalld, SSH and the `tpot.service` unit are reloaded through `handlers/main.yml`, not by
@@ -151,7 +162,10 @@ gigabytes per CI run.
   ships but the images strip (openssh-server, systemd-resolved, kmod, firewalld) and swaps
   `curl-minimal` for `curl` with `allowerasing` on the RedHat family — a container artifact, not
   a role problem.
-- `/lib/modules` is mounted read-only because `06_setup_system.yml` runs `modprobe iptable_filter`.
+- `/lib/modules` is mounted read-only so the `modprobe` probes in `06_setup_system.yml` can
+  resolve module names. Those probes ask the **host** kernel, not the container's distribution,
+  so a runner with full xtables makes every distro take the xtables-present path — the nftables
+  fallback is not reachable from container CI and belongs to the `full` scenario on an EL10 VM.
 - CI matrix: debian12, debian13, ubuntu2404, rockylinux9, fedora42. **AlmaLinux and openSUSE have
   no geerlingguy image and are therefore uncovered by CI** — they rely on the `full` scenario.
 - Keep the run warning-free. Use `ansible_facts['x']` rather than bare injected facts
