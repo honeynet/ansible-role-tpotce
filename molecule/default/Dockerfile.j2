@@ -15,18 +15,23 @@ FROM {{ item.image }}
 RUN if [ $(command -v apt-get) ]; then \
       export DEBIAN_FRONTEND=noninteractive && apt-get update && \
       apt-get install -y --no-install-recommends \
-        systemd systemd-sysv python3 sudo bash ca-certificates iproute2 && \
+        systemd systemd-sysv dbus python3 sudo bash ca-certificates iproute2 && \
       apt-get clean && rm -rf /var/lib/apt/lists/*; \
     elif [ $(command -v dnf) ]; then \
       dnf makecache && dnf --assumeyes install \
-        systemd python3 sudo bash iproute procps-ng && \
+        systemd dbus-daemon python3 sudo bash iproute procps-ng && \
       dnf clean all; \
     elif [ $(command -v zypper) ]; then \
       zypper --non-interactive --gpg-auto-import-keys refresh && \
       zypper --non-interactive install --no-recommends \
-        systemd python3 sudo bash iproute2 && \
+        systemd dbus-1 python3 sudo bash iproute2 && \
       zypper clean -a; \
     fi
+
+# firewalld talks to the system bus, so `firewall-cmd` fails with
+# "DBUS_ERROR: Failed to connect to socket /run/dbus/system_bus_socket" unless
+# dbus is up. Some base images ship it without the socket unit enabled.
+RUN systemctl enable dbus.socket 2>/dev/null || true
 
 # Units that cannot work in a container and would either fail the boot or hold
 # it up waiting for hardware that is not there.

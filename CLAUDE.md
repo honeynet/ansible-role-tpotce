@@ -81,6 +81,12 @@ Three layers, highest precedence last:
 `tpot_conflicting_packages`, `tpot_docker_packages`, `tpot_docker_packages_remove`,
 `tpot_docker_repo_url`, `tpot_grc_rpm_url`, `tpot_cron_package` only.
 
+EPEL is the role's own responsibility, not upstream's: `htop` is not in the AlmaLinux, Rocky or
+RHEL base repositories, and upstream enables EPEL in `install.sh` rather than in the playbook. A
+role that replaces both has to do it, via `tpot_epel_package` / `tpot_epel_rpm_url`. Note that the
+`geerlingguy` Rocky image ships EPEL already, so this gap is invisible on that platform and only
+shows up on the stock `almalinux:10` image.
+
 `tpot_recommended_packages` is kept byte-identical to upstream's list per distribution so it can
 be diffed against the installer. What is actually installed is `tpot_packages`, defined in
 `vars/main.yml` as `(tpot_recommended_packages + [tpot_cron_package]) | unique` — this works

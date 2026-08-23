@@ -112,6 +112,11 @@ tpot_docker_repo_url: ''
 # Distributions that do not package grc install it from a release RPM.
 tpot_grc_rpm_url: ''
 
+# Distributions whose recommended package list needs EPEL. Either a package
+# name from the distribution's own repositories, or a release RPM URL.
+tpot_epel_package: ''
+tpot_epel_rpm_url: ''
+
 # Distributions that do not package the micro editor fetch it from getmic.ro.
 tpot_install_micro_from_source: false
 

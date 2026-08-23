@@ -15,6 +15,10 @@ tpot_docker_packages:
 
 tpot_docker_repo_url: "https://download.docker.com/linux/rhel/docker-ce.repo"
 
+# EPEL is not packaged on RHEL, it is installed from a release RPM. Requires
+# the codeready-builder repository, which the operator must enable.
+tpot_epel_rpm_url: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_facts['distribution_major_version'] }}.noarch.rpm"
+
 tpot_install_micro_from_source: true
 
 # Provides crontab, which the daily reboot job needs.
