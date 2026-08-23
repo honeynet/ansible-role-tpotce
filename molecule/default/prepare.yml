@@ -21,6 +21,10 @@
         - kmod
         - openssh-server
         - firewalld
+      Suse:
+        - kmod
+        - openssh
+        - firewalld
 
   tasks:
     - name: Update the package cache

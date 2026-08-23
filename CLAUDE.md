@@ -39,8 +39,9 @@ molecule test                         # default scenario (Docker), debian13
 molecule converge && molecule verify  # iterate without tearing the container down
 molecule destroy                      # clean up afterwards
 
-# One distro from the CI matrix. All three vars must be set together.
-MOLECULE_DISTRO=rockylinux9 MOLECULE_DISTRO_TAG=rockylinux9 \
+# One distro from the CI matrix. All three vars must be set together; the
+# image is a full reference, not a distro slug.
+MOLECULE_IMAGE=almalinux:10 MOLECULE_DISTRO_TAG=almalinux10 \
   MOLECULE_DOCKER_COMMAND=/usr/lib/systemd/systemd molecule test
 
 molecule test -s full                 # full install; needs Vagrant + libvirt, VM only
@@ -158,20 +159,37 @@ gigabytes per CI run.
   `rockylinux9` image has no sudo password (`PAM account management error`). As a connection
   variable it overrides the play's `become: true`, which `converge.yml` keeps so the role is
   exercised the way a consumer runs it. `prepare.yml` likewise has no `become`.
-- Base images are `geerlingguy/docker-<distro>-ansible`. `prepare.yml` installs what a real host
-  ships but the images strip (openssh-server, systemd-resolved, kmod, firewalld) and swaps
-  `curl-minimal` for `curl` with `allowerasing` on the RedHat family — a container artifact, not
-  a role problem.
+- **Every platform is built from `molecule/default/Dockerfile.j2`** (`pre_build_image: false`),
+  because the matrix is not uniform. geerlingguy publishes an Ansible-ready image for Debian,
+  Ubuntu, Rocky and Fedora; AlmaLinux and openSUSE Tumbleweed have none, so those start from the
+  distribution's own image and the Dockerfile adds systemd, python3 and sudo. systemd must be
+  baked into the image — it is PID 1, so `prepare.yml` cannot install it. For the geerlingguy
+  bases the build layer is effectively a no-op.
+- `prepare.yml` then installs what a real host ships but the images strip (openssh-server,
+  systemd-resolved, kmod, firewalld) and swaps `curl-minimal` for `curl` with `allowerasing` on
+  the RedHat family — a container artifact, not a role problem.
 - `/lib/modules` is mounted read-only so the `modprobe` probes in `06_setup_system.yml` can
   resolve module names. Those probes ask the **host** kernel, not the container's distribution,
   so a runner with full xtables makes every distro take the xtables-present path — the nftables
   fallback is not reachable from container CI and belongs to the `full` scenario on an EL10 VM.
-- CI matrix: debian12, debian13, ubuntu2404, rockylinux9, fedora42. **AlmaLinux and openSUSE have
-  no geerlingguy image and are therefore uncovered by CI** — they rely on the `full` scenario.
+- CI matrix: debian13, ubuntu2604, almalinux10, rockylinux10, fedora44, tumbleweed. **It carries
+  the current release of each distribution and nothing older** — upstream's installer asserts the
+  distribution version and refuses anything else, so an older release is not a supported
+  configuration and proves nothing. When upstream bumps its version map, *move* the matrix rather
+  than extending it. RHEL and Raspbian have no usable public image and rely on the `full` scenario.
 - Keep the run warning-free. Use `ansible_facts['x']` rather than bare injected facts
   (`INJECT_FACTS_AS_VARS` is removed in ansible-core 2.24) and `deb822_repository` rather than
   `apt_repository` (removed in 2.25). `deb822_repository` needs `python3-debian`, which is not
   universally present, hence `install_python_debian: true` in `04_prep_for_docker.yml`.
+
+### Verifying locally
+
+The sandbox cannot reach `mirrors.almalinux.org` or `download.opensuse.org` (403 from the network
+policy), and it is aarch64 while the runners are x86_64 — so the `almalinux10` and `tumbleweed`
+jobs cannot be reproduced here and CI is the only check for them. Its kernel also has no
+netfilter modules, so firewalld will not start: every EL and Tumbleweed scenario fails at
+`Get Firewall rules` locally, on the unmodified role too. Debian and Ubuntu run clean and are the
+fast local signal.
 
 `.ansible-lint` skips `package-latest`, `no-changed-when`, `command-instead-of-module` and
 `name[casing]` — all four because the role tracks upstream's behaviour and naming. Prefer fixing

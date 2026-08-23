@@ -41,15 +41,23 @@ jobs:
       - name: Lint Ansible
         run: ansible-lint
 
-  # AlmaLinux and openSUSE have no geerlingguy image, so they stay covered by
-  # the `full` scenario on a virtual machine.
+  # The matrix is the current release of each distribution T-Pot supports, and
+  # nothing older: upstream's installer asserts the distribution version and
+  # refuses anything else, so an older release would not be a supported
+  # configuration to begin with.
+  #
+  # geerlingguy publishes an Ansible ready image for Debian, Ubuntu, Rocky and
+  # Fedora. AlmaLinux and openSUSE Tumbleweed have none, so they start from the
+  # distribution's own image and molecule/default/Dockerfile.j2 adds systemd,
+  # python3 and sudo. RHEL and Raspbian have no usable public image at all and
+  # stay covered by the `full` scenario on a virtual machine.
   #
   # These containers share the runner's kernel, which has the full xtables
   # module set. `modprobe -n xt_addrtype` therefore succeeds on every distro
-  # here, including rockylinux10, so the nftables fallback path is never taken
-  # in this job -- what it does prove is that the probes are harmless on a
-  # kernel that does have the modules. The fallback itself needs the `full`
-  # scenario on an EL10 VM.
+  # here, so the nftables fallback in 06_setup_system.yml is never taken in
+  # this job -- what it does prove is that the probes are harmless on a kernel
+  # that does have the modules. The fallback itself needs the `full` scenario
+  # on an EL10 VM.
   molecule:
     name: Molecule (${{ matrix.distro }})
     runs-on: ubuntu-latest
@@ -57,20 +65,23 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - distro: debian12
-            command: /lib/systemd/systemd
           - distro: debian13
+            image: geerlingguy/docker-debian13-ansible:latest
             command: /lib/systemd/systemd
-          - distro: ubuntu2404
+          - distro: ubuntu2604
+            image: geerlingguy/docker-ubuntu2604-ansible:latest
             command: /lib/systemd/systemd
-          - distro: rockylinux9
+          - distro: almalinux10
+            image: almalinux:10
             command: /usr/lib/systemd/systemd
-          # EL10 is what upstream now targets. Its kernel is also the reason
-          # for the nftables fallback in 06_setup_system.yml -- though that
-          # branch cannot actually trigger here, see the note below.
           - distro: rockylinux10
+            image: geerlingguy/docker-rockylinux10-ansible:latest
             command: /usr/lib/systemd/systemd
-          - distro: fedora42
+          - distro: fedora44
+            image: geerlingguy/docker-fedora44-ansible:latest
+            command: /usr/lib/systemd/systemd
+          - distro: tumbleweed
+            image: opensuse/tumbleweed:latest
             command: /usr/lib/systemd/systemd
 
     steps:
@@ -98,6 +109,6 @@ jobs:
         env:
           PY_COLORS: '1'
           ANSIBLE_FORCE_COLOR: '1'
-          MOLECULE_DISTRO: ${{ matrix.distro }}
+          MOLECULE_IMAGE: ${{ matrix.image }}
           MOLECULE_DISTRO_TAG: ${{ matrix.distro }}
           MOLECULE_DOCKER_COMMAND: ${{ matrix.command }}
