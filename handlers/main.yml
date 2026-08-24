@@ -1,0 +1,38 @@
+---
+
+- name: Restart Firewalld (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
+  ansible.builtin.service:
+    name: firewalld
+    state: restarted
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+  tags:
+    - "AlmaLinux"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "RedHat"
+    - "Rocky"
+
+- name: Restart SSH (All)
+  ansible.builtin.service:
+    name: "{{ 'ssh' if ansible_facts['distribution'] in ['Ubuntu'] else 'sshd' }}"
+    state: restarted
+    enabled: true
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Reload systemd and enable T-Pot service
+  become: true
+  ansible.builtin.systemd:
+    name: tpot.service
+    daemon_reload: true
+    state: stopped
+    enabled: true
+  when: ansible_facts['distribution'] in tpot_supported_distributions

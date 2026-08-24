@@ -1,145 +1,132 @@
 ---
-PREINSTALLPACKAGES:
-  - aria2
-  - apache2-utils
-  - cracklib-runtime
-  - curl
-  - dialog
-  - figlet
-  - fuse
-  - grc
-  - libcrack2
-  - libpq-dev
-  - lsb-release
-  - netselect-apt
-  - net-tools
-  - software-properties-common
-  - toilet
-  - wget
+# Internal role constants. Override the variables in defaults/main.yml instead.
 
-INSTALLPACKAGES:
-  - aria2
-  - apache2-utils
-  - apparmor
-  - apt-transport-https
-  - aufs-tools
-  - bash-completion
-  - build-essential
-  - ca-certificates
-  - cgroupfs-mount
-  - cockpit
-  - cockpit-docker
-  - console-setup
-  - console-setup-linux
-  - cracklib-runtime
-  - curl
-  - debconf-utils
-  - dialog
-  - dnsutils
-  - docker.io
-  - docker-compose
-  - ethtool
-  - fail2ban
-  - figlet
-  - genisoimage
-  - git
-  - glances
-  - grc
-  - haveged
-  - html2text
-  - htop
-  - iptables
-  - iw
-  - jq
-  - kbd
-  - libcrack2
-  - libltdl7
-  - libpam-google-authenticator
-  - man
-  - mosh
-  - multitail
-  - netselect-apt
-  - net-tools
-  - npm
-  - ntp
-  - openssh-server
-  - openssl
-  - pass
-  - pigz
-  - prips
-  - software-properties-common
-  - syslinux
-  - psmisc
-  - pv
-  - python3-pip
-  - toilet
-  - unattended-upgrades
-  - unzip
-  - vim
-  - wget
-  - wireless-tools
-  - wpasupplicant
+# Path to upstream's service catalogue inside the cloned repository. Every
+# service definition in the generated docker-compose.yml is taken verbatim
+# from this file, which is why the role never has to carry its own copy of
+# upstream's compose YAML.
+tpot_services_catalogue: "{{ tpot_dir }}/compose/tpot_services.yml"
 
-PYTHONPACKAGES:
+# Always included, regardless of `tpot_services`. Upstream's customizer.py
+# does the same for tpotinit; it also force-includes logstash, which this
+# role deliberately does not.
+tpot_required_services:
+  - tpotinit
+
+# Never included. This role builds sensor-only configurations: no web UI, no
+# local Elasticsearch/Kibana and no local Logstash. Logs leave the sensor via
+# filebeat instead.
+#
+# Because none of these can ever be selected, upstream customizer.py's
+# kibana -> elasticsearch, spiderfoot -> nginx and map_* -> elasticsearch +
+# nginx dependency rules are unreachable here and are not implemented.
+tpot_excluded_services:
+  - elasticsearch
+  - kibana
+  - logstash
+  - map_data
+  - map_redis
+  - map_web
+  - nginx
+  - spiderfoot
+
+# Snare / Tanner only works when the whole group runs. Selecting any one of
+# these pulls in the rest, matching customizer.py's enforce_dependencies().
+tpot_tanner_services:
+  - snare
+  - tanner
+  - tanner_api
+  - tanner_phpox
+  - tanner_redis
+
+# honeytrap and glutton both grab unclaimed ports via NFQUEUE and cannot run
+# at the same time. customizer.py always votes in favour of honeytrap.
+tpot_nfq_services:
+  - glutton
+  - honeytrap
+
+# Services this role defines itself, i.e. that are not part of upstream's
+# catalogue. Rendered into docker-compose.yml when selected.
+tpot_local_services:
+  filebeat:
+    container_name: filebeat
+    restart: always
+    depends_on:
+      tpotinit:
+        condition: service_healthy
+    env_file:
+      - "${TPOT_DATA_PATH}/tpot/etc/compose/elk_environment"
+    image: "{{ filebeat_image }}:{{ filebeat_version }}"
+    volumes:
+      - "${TPOT_DATA_PATH}:/data:ro"
+      - "{{ filebeat_path }}/conf.d:/usr/share/filebeat/conf.d:ro"
+      - "{{ filebeat_path }}/filebeat.yml:/usr/share/filebeat/filebeat.yml:ro"
+
+# Written by tpotinit at runtime, but docker compose resolves `env_file`
+# while it parses the configuration, so it has to exist before the first
+# `docker compose up`.
+tpot_elk_environment: "{{ tpot_data_path }}/tpot/etc/compose/elk_environment"
+
+tpot_supported_distributions:
+  - AlmaLinux
+  - Debian
+  - Fedora
+  - openSUSE Tumbleweed
+  - Raspbian
+  - RedHat
+  - Rocky
+  - Ubuntu
+
+##############################################################################
+# Package lists
+#
+# Distribution specific lists live in vars/<distribution>.yml (or
+# vars/<os_family>.yml) and are loaded by tasks/main.yml. The values below are
+# the fallbacks for anything a distribution file does not define; the tasks
+# only ever reference the variable, never a literal package list.
+##############################################################################
+
+# Installed on every supported distribution.
+tpot_recommended_packages: []
+
+# Removed before the recommended packages are installed.
+tpot_conflicting_packages: []
+
+# Docker Engine packages to install.
+tpot_docker_packages: []
+
+# Distribution packages that conflict with Docker Engine. Identical on every
+# distribution that uses them, so this is not split per distribution.
+tpot_docker_packages_remove:
   - docker
-  - yq
-  - elasticsearch-curator
+  - docker-engine
+  - docker.io
+  - containerd
+  - runc
+  - podman-docker
+  - podman
 
-SHELLCHECK: '[[ $- == *i* ]] || return'
-ROOTPROMPT: 'PS1="\[\033[38;5;8m\][\[$(tput sgr0)\]\[\033[38;5;1m\]\u\[$(tput sgr0)\]\[\033[38;5;6m\]@\[$(tput sgr0)\]\[\033[38;5;4m\]\h\[$(tput sgr0)\]\[\033[38;5;6m\]:\[$(tput sgr0)\]\[\033[38;5;5m\]\w\[$(tput sgr0)\]\[\033[38;5;8m\]]\[$(tput sgr0)\]\[\033[38;5;1m\]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"'
-USERPROMPT: 'PS1="\[\033[38;5;8m\][\[$(tput sgr0)\]\[\033[38;5;2m\]\u\[$(tput sgr0)\]\[\033[38;5;6m\]@\[$(tput sgr0)\]\[\033[38;5;4m\]\h\[$(tput sgr0)\]\[\033[38;5;6m\]:\[$(tput sgr0)\]\[\033[38;5;5m\]\w\[$(tput sgr0)\]\[\033[38;5;8m\]]\[$(tput sgr0)\]\[\033[38;5;2m\]\\$\[$(tput sgr0)\]\[\033[38;5;15m\] \[$(tput sgr0)\]"'
-ROOTCOLORS: "export LS_OPTIONS='--color=auto'"
+# Docker Engine repository definition, for the dnf based distributions.
+tpot_docker_repo_url: ''
 
-DIRECTORYLIST:
-  - /data/adbhoney/downloads
-  - /data/adbhoney/log
-  - /data/ciscoasa/log
-  - /data/conpot/log
-  - /data/citrixhoneypot/logs
-  - /data/cowrie/downloads/
-  - /data/cowrie/keys/
-  - /data/cowrie/misc/
-  - /data/cowrie/log/tty/
-  - /data/ddospot/bl
-  - /data/ddospot/db
-  - /data/ddospot/log
-  - /data/dicompot/images
-  - /data/dicompot/log
-  - /data/dionaea/log
-  - /data/dionaea/bistreams
-  - /data/dionaea/binaries
-  - /data/dionaea/rtp
-  - /data/dionaea/roots/ftp
-  - /data/dionaea/roots/tftp
-  - /data/dionaea/roots/www
-  - /data/dionaea/roots/upnp
-  - /data/elasticpot/log
-  - /data/elk/data
-  - /data/elk/log
-  - /data/endlessh/log
-  - /data/fatt/log
-  - /data/honeytrap/log/
-  - /data/honeytrap/attacks/
-  - /data/honeytrap/downloads/
-  - /data/glutton/log
-  - /data/hellpot/log
-  - /data/heralding/log
-  - /data/honeypots/log
-  - /data/honeypy/log
-  - /data/honeysap/log
-  - /data/ipphoney/log
-  - /data/log4pot/log
-  - /data/log4pot/payloads
-  - /data/mailoney/log
-  - /data/medpot/log
-  - /data/nginx/log
-  - /data/nginx/heimdall
-  - /data/emobility/log
-  - /data/ews/conf
-  - /data/rdpy/log
-  - /data/redishoneypot/log
-  - /data/spiderfoot
-  - /data/suricata/log
-  - /data/tanner/log
-  - /data/tanner/files
-  - /data/p0f/log
+# Distributions that do not package grc install it from a release RPM.
+tpot_grc_rpm_url: ''
+
+# Distributions that do not package the micro editor fetch it from getmic.ro.
+tpot_install_micro_from_source: false
+
+# Package providing crontab. Upstream installs a cron implementation as part of
+# its recommended packages on the Debian family and Fedora, but not on
+# AlmaLinux, RHEL, Rocky or openSUSE -- even though it schedules a cron job on
+# all of them, leaving that job with nothing to run it.
+tpot_cron_package: cronie
+
+# What 03_prep_system.yml actually installs. Kept as a separate list from
+# tpot_recommended_packages so that variable stays a faithful mirror of
+# upstream's list for each distribution and can be diffed against it, while the
+# role still installs the cron package upstream omits. Ansible templates
+# variables lazily, so this resolves after tasks/main.yml has loaded the
+# distribution file and picks up its values, not the fallbacks below.
+# `unique` because the Debian family and Fedora already carry their cron
+# package in upstream's own list, so the append would otherwise duplicate it.
+tpot_packages: "{{ (tpot_recommended_packages + [tpot_cron_package]) | unique }}"

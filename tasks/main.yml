@@ -1,46 +1,64 @@
 ---
-- name: Prep system
-  include: prep_system/install_packages.yml
+# The task order below mirrors the play order of the upstream installer,
+# telekom-security/tpotce -> installer/install/tpot.yml, followed by the
+# post-playbook steps that upstream's install.sh performs.
+#
+# Note: unlike upstream, this role does not refuse to run as root.
 
-- name: SSH setup
-  include: setup_system/setup_ssh.yml
+- name: Bootstrap Python
+  ansible.builtin.include_tasks: 01_bootstrap_python.yml
 
-- name: Clone T-Pot repo
-  include: setup_system/clone_tpot_repo.yml
+- name: Support Check
+  ansible.builtin.include_tasks: 02_support_check.yml
 
-- name: Make Users
-  include: setup_system/make_tpot_user.yml
+# Package lists and repository URLs are kept out of the tasks. Matching on the
+# distribution first lets AlmaLinux, Fedora, RHEL and Rocky each keep their own
+# list while Debian / Raspbian / Ubuntu and openSUSE fall back to their family.
+- name: Load distribution specific variables
+  ansible.builtin.include_vars: "{{ lookup('ansible.builtin.first_found', params) }}"
+  vars:
+    params:
+      files:
+        - "{{ ansible_facts['distribution'] }}.yml"
+        - "{{ ansible_facts['os_family'] }}.yml"
+      paths:
+        - "{{ role_path }}/vars"
 
-- name: Setup cockpit
-  include: setup_system/setup_cockpit.yml
+- name: Prep System
+  ansible.builtin.include_tasks: 03_prep_system.yml
 
-- name: Setup T-Pot
-  include: setup_tpot/setup_tpot_config.yml
+- name: Prep for Docker
+  ansible.builtin.include_tasks: 04_prep_for_docker.yml
 
-- name: Setup APT autoupdate
-  include: setup_system/setup_apt_autoupdate.yml
+- name: Install Docker
+  ansible.builtin.include_tasks: 05_install_docker.yml
 
-- name: Setup sysctl
-  include: setup_system/setup_sysctl.yml
+# Creates the tpot group, so it must run before 08_config_system.yml adds
+# the current user to it.
+- name: Setup System
+  ansible.builtin.include_tasks: 06_setup_system.yml
 
-- name: Setup fail2ban
-  include: setup_system/setup_fail2ban.yml
+- name: Restart Services
+  ansible.builtin.include_tasks: 07_restart_services.yml
 
-- name: Systemd fix
-  include: setup_system/systemd_fix.yml
+# Clones the T-Pot repository, so it must run before anything that reads
+# from or writes into it.
+- name: Config System
+  ansible.builtin.include_tasks: 08_config_system.yml
 
-- name: Setup crontab
-  include: setup_tpot/setup_crontab.yml
+- name: Setup tpot
+  ansible.builtin.include_tasks: 09_setup_tpot.yml
 
-- name: Setup Directorys and Permissions
-  include: setup_tpot/setup_directory_files_permissions.yml
+- name: Config T-Pot
+  ansible.builtin.include_tasks: 10_config_tpot.yml
 
-- name: Setup grub
-  include: setup_system/setup_grub.yml
-  tags: molecule-notest-docker
+- name: Build Compose
+  ansible.builtin.include_tasks: 11_build_compose.yml
 
-- name: Setup console
-  include: setup_system/setup_console.yml
+- name: Pull Images
+  ansible.builtin.include_tasks: 12_pull_images.yml
+  when: tpot_pull_images | bool
 
-- name: Set new hostname
-  include: setup_tpot/set_hostname.yml
+- name: Daily Reboot
+  ansible.builtin.include_tasks: 13_daily_reboot.yml
+  when: tpot_daily_reboot | bool

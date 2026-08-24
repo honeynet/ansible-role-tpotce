@@ -1,0 +1,84 @@
+---
+############################################################
+# T-Pot - Install recommended, remove conflicting packages #
+############################################################
+#
+# The package lists themselves live in vars/<distribution>.yml, loaded by
+# tasks/main.yml. These tasks only reference the resulting variables.
+
+- name: Syncing clocks (All)
+  ansible.builtin.command: "hwclock --hctosys"
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  failed_when: false
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Remove conflicting packages (All)
+  ansible.builtin.package:
+    name: "{{ tpot_conflicting_packages }}"
+    state: absent
+    update_cache: true
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_conflicting_packages | length > 0
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Install grc from remote repo (AlmaLinux, Rocky)
+  ansible.builtin.dnf:
+    name: "{{ tpot_grc_rpm_url }}"
+    disable_gpg_check: true
+    state: present
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_grc_rpm_url | length > 0
+  tags:
+    - "AlmaLinux"
+    - "Rocky"
+
+- name: Install recommended packages (All)
+  ansible.builtin.package:
+    name: "{{ tpot_packages }}"
+    state: latest
+    update_cache: true
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_packages | length > 0
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Download and install micro editor (AlmaLinux, openSUSE Tumbleweed, RHEL, Rocky)
+  ansible.builtin.shell:
+    cmd: |
+      set -o pipefail
+      curl https://getmic.ro | bash && mv micro /usr/bin
+    executable: /bin/bash
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_install_micro_from_source | bool
+  tags:
+    - "AlmaLinux"
+    - "openSUSE Tumbleweed"
+    - "RedHat"
+    - "Rocky"

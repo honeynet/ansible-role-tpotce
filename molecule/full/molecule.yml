@@ -1,0 +1,44 @@
+---
+# Full end to end install. This installs Docker Engine, rewrites sshd_config,
+# changes the SSH port to 64295 and installs a systemd unit, so it needs a
+# throwaway virtual machine -- it cannot run in a container and must never be
+# pointed at a machine you care about.
+#
+# Run manually with:  molecule test -s full
+#                     MOLECULE_VAGRANT_BOX=generic/debian13 molecule test -s full
+dependency:
+  name: galaxy
+  options:
+    requirements-file: ${MOLECULE_PROJECT_DIRECTORY}/requirements.yml
+driver:
+  name: vagrant
+  provider:
+    name: libvirt
+platforms:
+  # Defaults to a dnf based distribution, because that is precisely what the
+  # container based `default` scenario cannot cover: modprobe, SELinux and
+  # firewalld all need a real kernel. Override with MOLECULE_VAGRANT_BOX to
+  # test another platform, e.g. generic/debian13 or generic/opensuse-tumbleweed.
+  - name: tpot-full
+    box: "${MOLECULE_VAGRANT_BOX:-generic/rocky9}"
+    memory: 4096
+    cpus: 2
+provisioner:
+  name: ansible
+  env:
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+  inventory:
+    host_vars:
+      tpot-full:
+        ansible_python_interpreter: /usr/bin/python3
+verifier:
+  name: ansible
+scenario:
+  test_sequence:
+    - destroy
+    - dependency
+    - syntax
+    - create
+    - converge
+    - verify
+    - destroy

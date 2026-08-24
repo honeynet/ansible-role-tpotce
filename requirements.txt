@@ -1,6 +1,6 @@
-ansible==2.9.20
-molecule==3.0.2
-ansible-lint==4.2.0
-docker==4.2.0
-molecule-vagrant==0.2
-python-vagrant==0.5.15
+ansible-core>=2.15
+ansible-lint>=24.2
+yamllint>=1.33
+molecule>=6.0
+molecule-plugins[docker]>=23.5
+docker>=7.0

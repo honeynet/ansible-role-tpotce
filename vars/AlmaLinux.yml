@@ -1,0 +1,36 @@
+---
+# AlmaLinux.
+
+tpot_recommended_packages:
+  - bash-completion
+  - ca-certificates
+  - cracklib
+  - curl
+  - dnf-plugins-core
+  - git
+  - grc
+  - htop
+  - httpd-tools
+  - net-tools
+  - tar
+  - vim
+  - wget
+
+tpot_conflicting_packages: []
+
+tpot_docker_packages:
+  - docker-ce
+  - docker-ce-cli
+  - containerd.io
+  - docker-buildx-plugin
+  - docker-compose-plugin
+
+tpot_docker_repo_url: "https://download.docker.com/linux/centos/docker-ce.repo"
+
+# grc is not in the distribution repositories.
+tpot_grc_rpm_url: "https://github.com/kriipke/grc/releases/download/1.13.8/grc-1.13.8-1.el7.noarch.rpm"
+
+tpot_install_micro_from_source: true
+
+# Provides crontab, which the daily reboot job needs.
+tpot_cron_package: cronie

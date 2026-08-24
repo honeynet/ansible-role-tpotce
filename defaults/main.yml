@@ -1,20 +1,98 @@
 ---
-honeypot_list:
-  - ciscoasa
+# The user T-Pot is installed for. The repository is cloned on this user's
+# behalf and the user is added to the `docker` and `tpot` groups.
+tpot_user: "{{ ansible_facts['user_id'] }}"
+tpot_user_home: "{{ ansible_facts['user_dir'] }}"
+
+# Where the T-Pot sources live. Upstream clones into the invoking user's home
+# directory, which ties the installation to one account: it moves when the role
+# is run as a different user, and it is orphaned if that account is removed.
+# /opt is the conventional location for add-on software, so the path is the
+# same on every host regardless of who ran the role.
+tpot_dir: /opt/tpotce
+
+# Upstream repository the T-Pot sources are cloned from.
+tpot_repo: "https://github.com/telekom-security/tpotce"
+tpot_repo_version: master
+
+# Host side location of TPOT_DATA_PATH. Keep this in sync if you override
+# TPOT_DATA_PATH via `tpot_env_extra`.
+tpot_data_path: "{{ tpot_dir }}/data"
+
+# Honeypots and support containers to include in the generated
+# docker-compose.yml. Defaults mirror upstream's compose/sensor.yml, minus
+# logstash (this role ships logs with filebeat instead).
+#
+# The full set of selectable services is whatever upstream's
+# compose/tpot_services.yml defines, plus `filebeat`. `tpotinit` is always
+# included and does not need to be listed. Services in
+# `tpot_excluded_services` (see vars/main.yml) can never be selected.
+tpot_services:
   - adbhoney
-  - conpot
+  - ciscoasa
+  - conpot_IEC104
+  - conpot_guardian_ast
+  - conpot_ipmi
+  - conpot_kamstrup_382
   - cowrie
+  - dicompot
   - dionaea
-  - honeypy
-  - glutton
+  - elasticpot
+  - h0neytr4p
   - heralding
+  - honeyaml
+  - honeytrap
+  - ipphoney
   - mailoney
   - medpot
-  - p0f
-  - rdpy
-  - suricata
+  - miniprint
+  - rdphoneypot
+  - redishoneypot
+  - sentrypeer
   - tanner
+  - wordpot
   - fatt
-logrotate_days: 30
+  - p0f
+  - suricata
+  - ewsposter
+
+# Upstream's catalogue lists every port a honeypot is capable of binding, so a
+# straight selection collides on ports (heralding alone claims 21, 22, 23, 25,
+# 80, 443, 3306 and 3389). Upstream's prebuilt editions resolve this by
+# commenting out the losing side, and are otherwise identical to the catalogue.
+# Ports for any selected service that also appears in this edition are taken
+# from it. Set to '' to use the catalogue's full port lists instead.
+tpot_port_reference_edition: sensor
+
+# Per-service port lists, applied on top of the reference edition. Use this to
+# hand-resolve conflicts the reference edition does not cover, e.g.
+#   tpot_port_overrides:
+#     ddospot: ["19:19/udp", "53:53/udp"]
+tpot_port_overrides: {}
+
+# Filebeat container. Only rendered when `filebeat` is in `tpot_services`.
+# The configuration it mounts is written by the companion role
+# honeynet/ansible-role-tpotce-filebeat.
 filebeat_version: "7.11.1"
-tpot_version: "2006"
+filebeat_image: "quay.io/honeynet/filebeat"
+filebeat_path: /opt/filebeat/etc
+
+# Keys written into the T-Pot config file ({{ tpot_dir }}/.env). Only these
+# keys are touched; every other key keeps the value shipped by upstream.
+# Use `tpot_env_extra` to set additional keys without replacing these.
+tpot_env:
+  TPOT_TYPE: SENSOR
+  WEB_USER: ''
+  LS_WEB_USER: ''
+tpot_env_extra: {}
+
+# Pull the container images once docker-compose.yml has been generated.
+tpot_pull_images: true
+
+# Upstream installs a randomized nightly reboot that prunes docker leftovers.
+# The schedule is seeded from the host name rather than being re-randomised on
+# every run: a fleet of sensors still reboots at spread out times, but an
+# individual sensor keeps the schedule it was given.
+tpot_daily_reboot: true
+tpot_daily_reboot_hour: "{{ range(0, 5) | random(seed=inventory_hostname) }}"
+tpot_daily_reboot_minute: "{{ range(0, 60) | random(seed=inventory_hostname) }}"

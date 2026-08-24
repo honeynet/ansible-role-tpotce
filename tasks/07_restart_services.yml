@@ -1,0 +1,71 @@
+---
+
+############################
+# T-Pot - Restart services #
+############################
+#
+# Upstream restarts firewalld and sshd unconditionally here. In a role that is
+# what handlers are for, so the tasks in 06_setup_system.yml that change those
+# services' configuration notify `Restart Firewalld` / `Restart SSH` instead,
+# and the flush below runs them at exactly this point -- upstream's ordering,
+# but only when something actually changed.
+
+- name: Apply pending service restarts (All)
+  ansible.builtin.meta: flush_handlers
+
+# systemd-resolved is deliberately not handler driven. 06_setup_system.yml
+# stops it before editing resolved.conf, and the T-Pot repository is cloned in
+# 08_config_system.yml, which needs working DNS. Deferring the start to a
+# handler would leave the host without a resolver in between.
+- name: Start Resolved (Fedora, RHEL, Ubuntu)
+  ansible.builtin.service:
+    name: systemd-resolved
+    state: restarted
+  when: ansible_facts['distribution'] in ["Fedora", "RedHat", "Ubuntu"]
+  tags:
+    - "Fedora"
+    - "RedHat"
+    - "Ubuntu"
+
+- name: Get Firewall rules (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
+  ansible.builtin.command: "firewall-cmd --list-all"
+  register: firewall_output
+  changed_when: false
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+  tags:
+    - "AlmaLinux"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "RedHat"
+    - "Rocky"
+
+- name: Print Firewall rules (AlmaLinux, Fedora, openSUSE Tumbleweed, RHEL, Rocky)
+  ansible.builtin.debug:
+    var: firewall_output.stdout_lines
+  when: ansible_facts['distribution'] in ["AlmaLinux", "Fedora", "openSUSE Tumbleweed", "RedHat", "Rocky"]
+  tags:
+    - "AlmaLinux"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "RedHat"
+    - "Rocky"
+
+# Not handler driven either: 05_install_docker.yml stops Docker, and
+# 12_pull_images.yml runs `docker compose pull`, so the daemon has to be back
+# up well before the end of the play. `started` rather than upstream's
+# `restarted` so a converged host is left alone.
+- name: Enable Docker Engine upon boot (All)
+  ansible.builtin.service:
+    name: docker
+    state: started
+    enabled: true
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"

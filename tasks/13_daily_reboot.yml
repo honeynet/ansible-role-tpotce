@@ -1,0 +1,27 @@
+---
+#############################################
+# T-Pot - Setup a randomized daily reboot   #
+#############################################
+
+# The hour falls between 0 and 5 so the reboot lands at night, and the minute
+# is spread so a fleet of sensors does not reboot in lockstep. Both are seeded
+# from inventory_hostname rather than re-randomised, so a sensor keeps the slot
+# it was given and the task is idempotent. Pin them with
+# `tpot_daily_reboot_hour` / `tpot_daily_reboot_minute`.
+#
+# The cron package this job needs is installed in 03_prep_system.yml; upstream
+# omits it on AlmaLinux, RHEL, Rocky and openSUSE.
+
+- name: Setup a randomized daily reboot (All)
+  become: true
+  ansible.builtin.cron:
+    name: "T-Pot Daily Reboot"
+    user: root
+    minute: "{{ tpot_daily_reboot_minute }}"
+    hour: "{{ tpot_daily_reboot_hour }}"
+    job: >-
+      bash -c 'systemctl stop tpot.service && docker container prune -f;
+      docker image prune -f; docker volume prune -f;
+      /usr/sbin/shutdown -r +1 "T-Pot Daily Reboot"'
+    state: present
+  when: ansible_facts['distribution'] in tpot_supported_distributions

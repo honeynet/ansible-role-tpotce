@@ -1,0 +1,40 @@
+---
+#################################
+# T-Pot - Install Docker Engine #
+#################################
+#
+# Package lists live in vars/<distribution>.yml.
+
+- name: Install Docker Engine packages (All)
+  ansible.builtin.package:
+    name: "{{ tpot_docker_packages }}"
+    state: latest
+    update_cache: true
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_docker_packages | length > 0
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Stop Docker (All)
+  ansible.builtin.service:
+    name: docker
+    state: stopped
+    enabled: false
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"

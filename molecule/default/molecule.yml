@@ -1,40 +1,61 @@
 ---
+# Exercises the parts of the role that can be verified without installing
+# Docker Engine and honeypots: distribution variable resolution, the T-Pot
+# config file and the docker-compose.yml generation that replaces upstream's
+# compose/customizer.py.
+#
+# The full install is covered by the `full` scenario, which needs a real VM.
 dependency:
   name: galaxy
+  options:
+    requirements-file: ${MOLECULE_PROJECT_DIRECTORY}/requirements.yml
 driver:
   name: docker
-lint: |
-  yamllint .
-  ansible-lint
 platforms:
-  - name: instance
-    image: "geerlingguy/docker-debian10-ansible:latest"
-    command: /lib/systemd/systemd
-    volumes:
-      - /sys/fs/cgroup:/sys/fs/cgroup:ro
-    privileged: true
+  - name: "tpot-${MOLECULE_DISTRO_TAG:-debian13}"
+    image: "geerlingguy/docker-${MOLECULE_DISTRO:-debian13}-ansible:latest"
     pre_build_image: true
+    command: ${MOLECULE_DOCKER_COMMAND:-""}
+    cgroupns_mode: host
+    privileged: true
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:rw
+      # 06_setup_system.yml loads iptable_filter with modprobe, which needs the
+      # host's modules to resolve the name. Containers share the host kernel,
+      # so mounting them read only is enough.
+      - /lib/modules:/lib/modules:ro
 provisioner:
   name: ansible
-  ansible_args:
-    - --skip-tags=molecule-notest-docker
+  # Makes the role resolvable by directory name from converge.yml, whatever
+  # the checkout layout is.
+  env:
+    ANSIBLE_ROLES_PATH: "${MOLECULE_PROJECT_DIRECTORY}/.."
+  config_options:
+    defaults:
+      callbacks_enabled: profile_tasks
   inventory:
     host_vars:
-      instance:
+      "tpot-${MOLECULE_DISTRO_TAG:-debian13}":
         ansible_python_interpreter: /usr/bin/python3
+        # converge.yml keeps `become: true`, the way a consumer runs the role.
+        # Inside the container the connection is already root, so the sudo hop
+        # is pure overhead -- and on the rockylinux9 image it fails outright
+        # with "sudo: PAM account management error". As a connection variable
+        # this overrides the play keyword, so no task shells out to sudo.
+        ansible_become: false
 verifier:
-  name: testinfra
+  name: ansible
 scenario:
-  name: default
   test_sequence:
-    - lint
     - destroy
-    # - dependency
+    - dependency
     - syntax
     - create
     - prepare
     - converge
-    - idempotence
-    # - side_effect
-    # - verify
+    # No idempotence step. The role mirrors upstream's playbook, which probes
+    # the system with `raw` and unconditionally stops and restarts docker,
+    # systemd-resolved and ssh on every run, so a second converge legitimately
+    # reports those tasks as changed.
+    - verify
     - destroy
