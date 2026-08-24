@@ -60,8 +60,20 @@
         that: ip_forward.stdout | trim == '1'
         fail_msg: "IPv4 forwarding is not enabled, Docker would refuse to start"
 
+    # `sshd -T` reads the compiled in default path, /etc/ssh/sshd_config.
+    # openSUSE ships no such file -- its vendor configuration lives in
+    # /usr/etc/ssh/sshd_config -- so the bare command reports nothing at all
+    # there and has to be pointed at the file the daemon itself uses. That
+    # vendor file carries `Include /etc/ssh/sshd_config.d/*.conf`, which is
+    # how the role's port.conf takes effect.
+    - name: Look for the main sshd configuration file
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config
+      register: sshd_main
+
     - name: SSH is configured for port 64295
-      ansible.builtin.command: sshd -T
+      ansible.builtin.command: >-
+        sshd -T {{ '' if sshd_main.stat.exists else '-f /usr/etc/ssh/sshd_config' }}
       changed_when: false
       register: sshd_config
 
