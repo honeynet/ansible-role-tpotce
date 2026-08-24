@@ -1,0 +1,70 @@
+---
+#############################################
+# T-Pot - Set a randomized host name        #
+#############################################
+
+# Upstream's playbook no longer renames the host, but the repository still
+# ships the two word lists its earlier installers picked from --
+# `installer/install/a.txt` (adjectives) and `installer/install/n.txt`
+# (nouns) -- and the ISO build still names sensors that way. A sensor that
+# keeps its distribution default name is indistinguishable from every other
+# sensor once the logs leave the box, so the role reproduces the old
+# behaviour: <adjective><noun>, e.g. "abashedaardvark".
+#
+# The lists are read from the clone 08_config_system.yml created, never from
+# the controller, so the role carries no copy of them.
+#
+# The pick is seeded rather than re-randomised on every run, the same way the
+# daily reboot slot is: a fleet gets distinct names, an individual sensor
+# keeps the name it was given, and a re-run is a no-op. `tpot_hostname_seed`
+# defaults to the machine id, which survives a rename -- seeding from the
+# current host name would hand out a new name on every run.
+
+- name: Read the adjective word list (All)
+  ansible.builtin.slurp:
+    src: "{{ tpot_dir }}/installer/install/a.txt"
+  register: tpot_hostname_adjectives
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+
+- name: Read the noun word list (All)
+  ansible.builtin.slurp:
+    src: "{{ tpot_dir }}/installer/install/n.txt"
+  register: tpot_hostname_nouns
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+
+# The lists are English dictionaries, so they contain apostrophes, hyphens and
+# capitals ("adder's-tongue", "all-American"). Everything a host name may not
+# carry is dropped, and a leading or trailing hyphen would make the name
+# invalid on its own.
+- name: Compose a random host name (All)
+  ansible.builtin.set_fact:
+    tpot_hostname: >-
+      {{ ((tpot_hostname_adjectives.content | b64decode).splitlines()
+          | random(seed=tpot_hostname_seed ~ '-adjective')
+          ~ (tpot_hostname_nouns.content | b64decode).splitlines()
+          | random(seed=tpot_hostname_seed ~ '-noun'))
+         | lower
+         | regex_replace('[^a-z0-9-]', '')
+         | regex_replace('^-+|-+$', '') }}
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+
+- name: Set the system host name (All)
+  become: true
+  ansible.builtin.hostname:
+    name: "{{ tpot_hostname }}"
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+
+# Debian and Ubuntu resolve the host's own name through the 127.0.1.1 entry.
+# The RedHat family and openSUSE ship no such line, in which case the entry is
+# appended -- harmless there, and it keeps `hostname -f` answering after the
+# rename on every distribution.
+- name: Point 127.0.1.1 at the new host name (All)
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: '^127\.0\.1\.1\s'
+    line: "127.0.1.1 {{ tpot_hostname }}"
+    owner: root
+    group: root
+    mode: '0644'
+  when: ansible_facts['distribution'] in tpot_supported_distributions

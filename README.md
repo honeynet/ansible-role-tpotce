@@ -117,6 +117,8 @@ unknown or excluded service fails the run with the list of valid names.
 | `tpot_env` | `TPOT_TYPE: SENSOR`, empty `WEB_USER`/`LS_WEB_USER` | Keys written into `.env`. Everything else keeps upstream's shipped value. |
 | `tpot_env_extra` | `{}` | Additional `.env` keys, merged over `tpot_env`. |
 | `tpot_pull_images` | `true` | Run `docker compose pull` after generating the compose file. |
+| `tpot_set_hostname` | `true` | Rename the host to a random `<adjective><noun>`, picked from upstream's `installer/install/a.txt` and `n.txt`. |
+| `tpot_hostname_seed` | machine id | Seed for that pick. Seeded rather than re-randomised so a sensor keeps its name; the machine id is used because it survives the rename. |
 | `tpot_daily_reboot` | `true` | Install upstream's nightly prune-and-reboot cron job. |
 | `tpot_daily_reboot_hour` / `_minute` | seeded from `inventory_hostname` | Schedule. Seeded rather than re-randomised so a sensor keeps its slot. |
 
@@ -190,6 +192,7 @@ user is added to it, and the repository must be cloned before anything reads fro
 | `11_build_compose.yml` | Generate `docker-compose.yml` (the customizer replacement) |
 | `12_pull_images.yml` | `docker compose pull` |
 | `13_daily_reboot.yml` | Randomized nightly reboot cron job |
+| `14_set_hostname.yml` | Rename the host to a random `<adjective><noun>` |
 
 ## Testing
 

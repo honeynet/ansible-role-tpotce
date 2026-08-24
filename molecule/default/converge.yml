@@ -7,6 +7,12 @@
     # run. 11_build_compose.yml has already been proven correct by the time
     # this would run, and the compose file is validated in verify.yml.
     tpot_pull_images: false
+    # Docker bind mounts /etc/hostname and /etc/hosts into the container, so
+    # both the rename and the /etc/hosts edit die with "Device or resource
+    # busy" -- hostnamectl and Ansible's atomic write both rename over the
+    # mount point. Renaming the host is covered by the `full` scenario, which
+    # runs in a VM with the role's defaults.
+    tpot_set_hostname: false
     # Deliberately exercises the interesting selection paths: `snare` alone
     # must pull in the whole Snare / Tanner group, and glutton must lose to
     # honeytrap.

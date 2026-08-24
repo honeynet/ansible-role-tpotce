@@ -62,3 +62,11 @@
 - name: Daily Reboot
   ansible.builtin.include_tasks: 13_daily_reboot.yml
   when: tpot_daily_reboot | bool
+
+# Reads upstream's word lists out of the clone, so it has to run after
+# 08_config_system.yml. Nothing in the role depends on the host name, and
+# tpot.service is only enabled, never started, so the rename still lands
+# before a single honeypot has run.
+- name: Set Hostname
+  ansible.builtin.include_tasks: 14_set_hostname.yml
+  when: tpot_set_hostname | bool

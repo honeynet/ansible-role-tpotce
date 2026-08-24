@@ -54,7 +54,7 @@ parallel runs share the ephemeral directory and corrupt each other's inventory.
 
 ### Execution order is load-bearing
 
-`tasks/main.yml` includes `01_bootstrap_python.yml` … `13_daily_reboot.yml` in the order
+`tasks/main.yml` includes `01_bootstrap_python.yml` … `14_set_hostname.yml` in the order
 upstream's plays run. The numbering is not cosmetic:
 
 - `06_setup_system.yml` creates the `tpot` group; `08_config_system.yml` adds the user to it.
