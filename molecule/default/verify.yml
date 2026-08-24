@@ -103,7 +103,9 @@
 
     - name: Assert the SSH port was changed
       ansible.builtin.assert:
-        that: "'port 64295' in sshd_config.stdout"
+        # openSUSE's sshd renders the keyword as `Port`, every other
+        # distribution as `port`, so the comparison has to be case folded.
+        that: "'port 64295' in sshd_config.stdout | lower"
         fail_msg: |
           sshd is not configured for port 64295.
           command: {{ sshd_config.cmd }}
