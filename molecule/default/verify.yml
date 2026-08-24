@@ -65,10 +65,28 @@
       changed_when: false
       register: sshd_config
 
+    # Where sshd reads its configuration from is not the same on every
+    # distribution -- openSUSE keeps the vendor file in /usr/etc and ships no
+    # /etc/ssh/sshd_config -- so when the port assertion fails, report what
+    # sshd actually saw rather than only that it disagreed.
+    - name: Collect the sshd configuration layout
+      ansible.builtin.shell: |
+        echo "--- files ---"
+        ls -l /etc/ssh/sshd_config /usr/etc/ssh/sshd_config 2>&1
+        ls -l /etc/ssh/sshd_config.d/ 2>&1
+        echo "--- Include directives ---"
+        grep -rIn '^[[:space:]]*Include' /etc/ssh /usr/etc/ssh 2>/dev/null
+      changed_when: false
+      failed_when: false
+      register: sshd_layout
+
     - name: Assert the SSH port was changed
       ansible.builtin.assert:
         that: "'port 64295' in sshd_config.stdout"
-        fail_msg: "sshd is not configured for port 64295"
+        fail_msg: |
+          sshd is not configured for port 64295.
+          sshd -T reported: {{ sshd_config.stdout_lines | select('match', '^port ') | list }}
+          {{ sshd_layout.stdout }}
 
     - name: The nightly reboot cron job was installed
       ansible.builtin.command: crontab -l -u root
