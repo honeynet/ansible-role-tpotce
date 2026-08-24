@@ -203,5 +203,7 @@ a task over widening that list.
 
 ## Branches
 
-`full-rework` is the development branch and CI's push target; `master` is the release branch.
+`main` is the trunk: new work branches off it, and it is what pull requests target. It was
+renamed from `master`, and the `full-rework` development branch has been merged into it — CI
+still builds pushes to `full-rework`, but nothing new should be based on it.
 Work is submitted as **stacked PRs** grouped by logical change, each based on the previous.
