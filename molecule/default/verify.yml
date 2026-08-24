@@ -75,6 +75,9 @@
       ansible.builtin.command: >-
         sshd -T {{ '' if sshd_main.stat.exists else '-f /usr/etc/ssh/sshd_config' }}
       changed_when: false
+      # Reported by the assertion below instead of aborting here, so a failure
+      # shows what sshd said rather than only that the task exited non-zero.
+      failed_when: false
       register: sshd_config
 
     # Where sshd reads its configuration from is not the same on every
@@ -92,12 +95,23 @@
       failed_when: false
       register: sshd_layout
 
+    - name: Locate the sshd binary
+      ansible.builtin.shell: command -v sshd || echo 'not on PATH'
+      changed_when: false
+      failed_when: false
+      register: sshd_which
+
     - name: Assert the SSH port was changed
       ansible.builtin.assert:
         that: "'port 64295' in sshd_config.stdout"
         fail_msg: |
           sshd is not configured for port 64295.
-          sshd -T reported: {{ sshd_config.stdout_lines | select('match', '^port ') | list }}
+          command: {{ sshd_config.cmd }}
+          rc: {{ sshd_config.rc }}
+          stdout lines: {{ sshd_config.stdout_lines | length }}
+          port lines: {{ sshd_config.stdout_lines | select('match', '^(?i)port ') | list }}
+          stderr: {{ sshd_config.stderr | default('') }}
+          which sshd: {{ sshd_which.stdout | default('not found') }}
           {{ sshd_layout.stdout }}
 
     - name: The nightly reboot cron job was installed
