@@ -109,7 +109,7 @@
           command: {{ sshd_config.cmd }}
           rc: {{ sshd_config.rc }}
           stdout lines: {{ sshd_config.stdout_lines | length }}
-          port lines: {{ sshd_config.stdout_lines | select('match', '^(?i)port ') | list }}
+          port lines: {{ sshd_config.stdout_lines | select('match', '^[Pp]ort ') | list }}
           stderr: {{ sshd_config.stderr | default('') }}
           which sshd: {{ sshd_which.stdout | default('not found') }}
           {{ sshd_layout.stdout }}
