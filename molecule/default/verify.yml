@@ -40,15 +40,81 @@
         that: tpot_dir ~ '/docker-compose.yml' in (tpot_unit.content | b64decode)
         fail_msg: "tpot.service does not reference {{ tpot_dir }}/docker-compose.yml"
 
-    - name: SSH is configured for port 64295
-      ansible.builtin.command: sshd -T
+    - name: IPv4 forwarding is persisted
+      ansible.builtin.slurp:
+        src: /etc/sysctl.conf
+      register: sysctl_conf
+
+    - name: Assert IPv4 forwarding was written to sysctl.conf
+      ansible.builtin.assert:
+        that: "'net.ipv4.ip_forward=1' in (sysctl_conf.content | b64decode)"
+        fail_msg: "net.ipv4.ip_forward=1 is missing from /etc/sysctl.conf"
+
+    - name: IPv4 forwarding is live
+      ansible.builtin.command: sysctl -n net.ipv4.ip_forward
       changed_when: false
+      register: ip_forward
+
+    - name: Assert IPv4 forwarding is enabled now
+      ansible.builtin.assert:
+        that: ip_forward.stdout | trim == '1'
+        fail_msg: "IPv4 forwarding is not enabled, Docker would refuse to start"
+
+    # `sshd -T` reads the compiled in default path, /etc/ssh/sshd_config.
+    # openSUSE ships no such file -- its vendor configuration lives in
+    # /usr/etc/ssh/sshd_config -- so the bare command reports nothing at all
+    # there and has to be pointed at the file the daemon itself uses. That
+    # vendor file carries `Include /etc/ssh/sshd_config.d/*.conf`, which is
+    # how the role's port.conf takes effect.
+    - name: Look for the main sshd configuration file
+      ansible.builtin.stat:
+        path: /etc/ssh/sshd_config
+      register: sshd_main
+
+    - name: SSH is configured for port 64295
+      ansible.builtin.command: >-
+        sshd -T {{ '' if sshd_main.stat.exists else '-f /usr/etc/ssh/sshd_config' }}
+      changed_when: false
+      # Reported by the assertion below instead of aborting here, so a failure
+      # shows what sshd said rather than only that the task exited non-zero.
+      failed_when: false
       register: sshd_config
+
+    # Where sshd reads its configuration from is not the same on every
+    # distribution -- openSUSE keeps the vendor file in /usr/etc and ships no
+    # /etc/ssh/sshd_config -- so when the port assertion fails, report what
+    # sshd actually saw rather than only that it disagreed.
+    - name: Collect the sshd configuration layout
+      ansible.builtin.shell: |
+        echo "--- files ---"
+        ls -l /etc/ssh/sshd_config /usr/etc/ssh/sshd_config 2>&1
+        ls -l /etc/ssh/sshd_config.d/ 2>&1
+        echo "--- Include directives ---"
+        grep -rIn '^[[:space:]]*Include' /etc/ssh /usr/etc/ssh 2>/dev/null
+      changed_when: false
+      failed_when: false
+      register: sshd_layout
+
+    - name: Locate the sshd binary
+      ansible.builtin.shell: command -v sshd || echo 'not on PATH'
+      changed_when: false
+      failed_when: false
+      register: sshd_which
 
     - name: Assert the SSH port was changed
       ansible.builtin.assert:
-        that: "'port 64295' in sshd_config.stdout"
-        fail_msg: "sshd is not configured for port 64295"
+        # openSUSE's sshd renders the keyword as `Port`, every other
+        # distribution as `port`, so the comparison has to be case folded.
+        that: "'port 64295' in sshd_config.stdout | lower"
+        fail_msg: |
+          sshd is not configured for port 64295.
+          command: {{ sshd_config.cmd }}
+          rc: {{ sshd_config.rc }}
+          stdout lines: {{ sshd_config.stdout_lines | length }}
+          port lines: {{ sshd_config.stdout_lines | select('match', '^[Pp]ort ') | list }}
+          stderr: {{ sshd_config.stderr | default('') }}
+          which sshd: {{ sshd_which.stdout | default('not found') }}
+          {{ sshd_layout.stdout }}
 
     - name: The nightly reboot cron job was installed
       ansible.builtin.command: crontab -l -u root

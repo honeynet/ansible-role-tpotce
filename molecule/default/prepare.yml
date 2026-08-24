@@ -21,12 +21,24 @@
         - kmod
         - openssh-server
         - firewalld
+      Suse:
+        - kmod
+        - openssh
+        - firewalld
 
   tasks:
-    - name: Update the package cache
+    # The zypper module requires `name`, so it cannot be used to refresh the
+    # cache on its own the way apt and dnf can.
+    - name: Update the package cache (apt, dnf)
       ansible.builtin.package:
         update_cache: true
       changed_when: false
+      when: ansible_facts['os_family'] != 'Suse'
+
+    - name: Update the package cache (zypper)
+      ansible.builtin.command: zypper --non-interactive refresh
+      changed_when: false
+      when: ansible_facts['os_family'] == 'Suse'
 
     # The RedHat family images ship curl-minimal, which conflicts with the full
     # curl the role installs. A full install of these distributions already has

@@ -1,0 +1,45 @@
+# Molecule managed -- see molecule/default/molecule.yml
+
+FROM {{ item.image }}
+
+# Brings every base image up to the same baseline: systemd as PID 1, plus the
+# python3 and sudo Ansible needs to drive the container.
+#
+# The geerlingguy images already carry all of this, so the layer is close to a
+# no-op for them. AlmaLinux 10 and openSUSE Tumbleweed have no geerlingguy
+# image, so those platforms start from the distribution's own image, where the
+# packages are genuinely missing -- Tumbleweed ships neither systemd nor
+# python3. systemd in particular has to be baked in here rather than installed
+# by prepare.yml, because it is the container's PID 1 and has to exist before
+# the container can start at all.
+RUN if [ $(command -v apt-get) ]; then \
+      export DEBIAN_FRONTEND=noninteractive && apt-get update && \
+      apt-get install -y --no-install-recommends \
+        systemd systemd-sysv dbus python3 sudo bash ca-certificates iproute2 && \
+      apt-get clean && rm -rf /var/lib/apt/lists/*; \
+    elif [ $(command -v dnf) ]; then \
+      dnf makecache && dnf --assumeyes install \
+        systemd dbus-daemon python3 sudo bash iproute procps-ng && \
+      dnf clean all; \
+    elif [ $(command -v zypper) ]; then \
+      zypper --non-interactive --gpg-auto-import-keys refresh && \
+      zypper --non-interactive install --no-recommends \
+        systemd dbus-1 python3 sudo bash iproute2 && \
+      zypper clean -a; \
+    fi
+
+# firewalld talks to the system bus, so `firewall-cmd` fails with
+# "DBUS_ERROR: Failed to connect to socket /run/dbus/system_bus_socket" unless
+# dbus is up. Some base images ship it without the socket unit enabled.
+RUN systemctl enable dbus.socket 2>/dev/null || true
+
+# Units that cannot work in a container and would either fail the boot or hold
+# it up waiting for hardware that is not there.
+RUN systemctl mask \
+      dev-hugepages.mount \
+      sys-fs-fuse-connections.mount \
+      systemd-logind.service \
+      getty.target \
+      console-getty.service 2>/dev/null || true
+
+STOPSIGNAL SIGRTMIN+3

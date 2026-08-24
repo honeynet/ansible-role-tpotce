@@ -38,6 +38,37 @@
     - "Rocky"
     - "Ubuntu"
 
+# htop -- and on some releases other packages in the recommended list -- lives
+# in EPEL rather than in the distribution's own repositories. Upstream enables
+# EPEL in install.sh, not in the playbook, so a role that replaces both has to
+# do it here or `Install recommended packages` fails with "No package htop
+# available" on a stock AlmaLinux, Rocky or RHEL.
+#
+# Note for RHEL: upstream also enables the codeready-builder repository through
+# subscription-manager, which EPEL expects. That needs an entitled system and
+# is left to the operator.
+- name: Enable EPEL (AlmaLinux, Rocky)
+  ansible.builtin.package:
+    name: "{{ tpot_epel_package }}"
+    state: present
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_epel_package | length > 0
+  tags:
+    - "AlmaLinux"
+    - "Rocky"
+
+- name: Enable EPEL from remote repo (RHEL)
+  ansible.builtin.dnf:
+    name: "{{ tpot_epel_rpm_url }}"
+    disable_gpg_check: true
+    state: present
+  when:
+    - ansible_facts['distribution'] in tpot_supported_distributions
+    - tpot_epel_rpm_url | length > 0
+  tags:
+    - "RedHat"
+
 - name: Install grc from remote repo (AlmaLinux, Rocky)
   ansible.builtin.dnf:
     name: "{{ tpot_grc_rpm_url }}"

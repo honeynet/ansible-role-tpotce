@@ -12,9 +12,16 @@ dependency:
 driver:
   name: docker
 platforms:
+  # Every platform is built from Dockerfile.j2 rather than used as-is, because
+  # the matrix is not uniform: geerlingguy publishes an Ansible ready image for
+  # Debian, Ubuntu and Rocky, but none for AlmaLinux or openSUSE Tumbleweed.
+  # Those two start from the distribution's own image and the Dockerfile brings
+  # them up to the same baseline. For the geerlingguy bases the build is
+  # effectively a no-op layer.
   - name: "tpot-${MOLECULE_DISTRO_TAG:-debian13}"
-    image: "geerlingguy/docker-${MOLECULE_DISTRO:-debian13}-ansible:latest"
-    pre_build_image: true
+    image: "${MOLECULE_IMAGE:-geerlingguy/docker-debian13-ansible:latest}"
+    pre_build_image: false
+    dockerfile: Dockerfile.j2
     command: ${MOLECULE_DOCKER_COMMAND:-""}
     cgroupns_mode: host
     privileged: true

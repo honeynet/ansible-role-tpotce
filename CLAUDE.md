@@ -39,8 +39,9 @@ molecule test                         # default scenario (Docker), debian13
 molecule converge && molecule verify  # iterate without tearing the container down
 molecule destroy                      # clean up afterwards
 
-# One distro from the CI matrix. All three vars must be set together.
-MOLECULE_DISTRO=rockylinux9 MOLECULE_DISTRO_TAG=rockylinux9 \
+# One distro from the CI matrix. All three vars must be set together; the
+# image is a full reference, not a distro slug.
+MOLECULE_IMAGE=almalinux:10 MOLECULE_DISTRO_TAG=almalinux10 \
   MOLECULE_DOCKER_COMMAND=/usr/lib/systemd/systemd molecule test
 
 molecule test -s full                 # full install; needs Vagrant + libvirt, VM only
@@ -79,6 +80,12 @@ Three layers, highest precedence last:
 **No task may contain a literal package name.** Tasks reference `tpot_packages`,
 `tpot_conflicting_packages`, `tpot_docker_packages`, `tpot_docker_packages_remove`,
 `tpot_docker_repo_url`, `tpot_grc_rpm_url`, `tpot_cron_package` only.
+
+EPEL is the role's own responsibility, not upstream's: `htop` is not in the AlmaLinux, Rocky or
+RHEL base repositories, and upstream enables EPEL in `install.sh` rather than in the playbook. A
+role that replaces both has to do it, via `tpot_epel_package` / `tpot_epel_rpm_url`. Note that the
+`geerlingguy` Rocky image ships EPEL already, so this gap is invisible on that platform and only
+shows up on the stock `almalinux:10` image.
 
 `tpot_recommended_packages` is kept byte-identical to upstream's list per distribution so it can
 be diffed against the installer. What is actually installed is `tpot_packages`, defined in
@@ -119,6 +126,17 @@ instead of hardcoding a table that would drift. `tpot_port_overrides` patches th
 The template emits **no generation timestamp**, deliberately, so re-running against an unchanged
 configuration leaves `docker-compose.yml` untouched.
 
+### Kernels without xtables
+
+RHEL 10 and its rebuilds ship a kernel with no legacy xtables modules, which breaks two things
+`06_setup_system.yml` handles by probing rather than assuming: `modprobe iptable_filter` is fatal
+there (so it is gated behind a `modprobe -n` dry run), and Docker's iptables firewall backend
+cannot load `xt_addrtype` (so `/etc/docker/daemon.json` is merged — never overwritten — with
+`{"firewall-backend": "nftables"}` and Docker is restarted through a handler).
+
+The same file also sets `net.ipv4.ip_forward=1`, persisted and live. Docker used to enable
+forwarding itself; with the nftables backend it refuses to start instead.
+
 ### Handlers
 
 Firewalld, SSH and the `tpot.service` unit are reloaded through `handlers/main.yml`, not by
@@ -147,17 +165,37 @@ gigabytes per CI run.
   `rockylinux9` image has no sudo password (`PAM account management error`). As a connection
   variable it overrides the play's `become: true`, which `converge.yml` keeps so the role is
   exercised the way a consumer runs it. `prepare.yml` likewise has no `become`.
-- Base images are `geerlingguy/docker-<distro>-ansible`. `prepare.yml` installs what a real host
-  ships but the images strip (openssh-server, systemd-resolved, kmod, firewalld) and swaps
-  `curl-minimal` for `curl` with `allowerasing` on the RedHat family — a container artifact, not
-  a role problem.
-- `/lib/modules` is mounted read-only because `06_setup_system.yml` runs `modprobe iptable_filter`.
-- CI matrix: debian12, debian13, ubuntu2404, rockylinux9, fedora42. **AlmaLinux and openSUSE have
-  no geerlingguy image and are therefore uncovered by CI** — they rely on the `full` scenario.
+- **Every platform is built from `molecule/default/Dockerfile.j2`** (`pre_build_image: false`),
+  because the matrix is not uniform. geerlingguy publishes an Ansible-ready image for Debian,
+  Ubuntu, Rocky and Fedora; AlmaLinux and openSUSE Tumbleweed have none, so those start from the
+  distribution's own image and the Dockerfile adds systemd, python3 and sudo. systemd must be
+  baked into the image — it is PID 1, so `prepare.yml` cannot install it. For the geerlingguy
+  bases the build layer is effectively a no-op.
+- `prepare.yml` then installs what a real host ships but the images strip (openssh-server,
+  systemd-resolved, kmod, firewalld) and swaps `curl-minimal` for `curl` with `allowerasing` on
+  the RedHat family — a container artifact, not a role problem.
+- `/lib/modules` is mounted read-only so the `modprobe` probes in `06_setup_system.yml` can
+  resolve module names. Those probes ask the **host** kernel, not the container's distribution,
+  so a runner with full xtables makes every distro take the xtables-present path — the nftables
+  fallback is not reachable from container CI and belongs to the `full` scenario on an EL10 VM.
+- CI matrix: debian13, ubuntu2604, almalinux10, rockylinux10, fedora44, tumbleweed. **It carries
+  the current release of each distribution and nothing older** — upstream's installer asserts the
+  distribution version and refuses anything else, so an older release is not a supported
+  configuration and proves nothing. When upstream bumps its version map, *move* the matrix rather
+  than extending it. RHEL and Raspbian have no usable public image and rely on the `full` scenario.
 - Keep the run warning-free. Use `ansible_facts['x']` rather than bare injected facts
   (`INJECT_FACTS_AS_VARS` is removed in ansible-core 2.24) and `deb822_repository` rather than
   `apt_repository` (removed in 2.25). `deb822_repository` needs `python3-debian`, which is not
   universally present, hence `install_python_debian: true` in `04_prep_for_docker.yml`.
+
+### Verifying locally
+
+The sandbox cannot reach `mirrors.almalinux.org` or `download.opensuse.org` (403 from the network
+policy), and it is aarch64 while the runners are x86_64 — so the `almalinux10` and `tumbleweed`
+jobs cannot be reproduced here and CI is the only check for them. Its kernel also has no
+netfilter modules, so firewalld will not start: every EL and Tumbleweed scenario fails at
+`Get Firewall rules` locally, on the unmodified role too. Debian and Ubuntu run clean and are the
+fast local signal.
 
 `.ansible-lint` skips `package-latest`, `no-changed-when`, `command-instead-of-module` and
 `name[casing]` — all four because the role tracks upstream's behaviour and naming. Prefer fixing

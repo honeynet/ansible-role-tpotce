@@ -30,6 +30,9 @@ tpot_docker_repo_url: "https://download.docker.com/linux/centos/docker-ce.repo"
 # grc is not in the distribution repositories.
 tpot_grc_rpm_url: "https://github.com/kriipke/grc/releases/download/1.13.8/grc-1.13.8-1.el7.noarch.rpm"
 
+# htop is only in EPEL on this distribution.
+tpot_epel_package: epel-release
+
 tpot_install_micro_from_source: true
 
 # Provides crontab, which the daily reboot job needs.

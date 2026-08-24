@@ -3,6 +3,11 @@ collections:
   # Runtime: ansible.posix.firewalld, used on the dnf based distributions.
   - name: ansible.posix
 
+  # Runtime: on openSUSE `ansible.builtin.package` dispatches to the `zypper`
+  # module, which lives here. Without it the role cannot install anything on
+  # Tumbleweed.
+  - name: community.general
+
   # Test only: the molecule docker driver drives community.docker.docker_container
   # in its create/destroy playbooks, so the default scenario cannot create a
   # container without it.
