@@ -5,7 +5,7 @@ name: CI
   pull_request:
   push:
     branches:
-      - master
+      - main
       - full-rework
   schedule:
     # Upstream's service catalogue is read at run time, so a weekly run catches
