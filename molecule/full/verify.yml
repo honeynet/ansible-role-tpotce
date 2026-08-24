@@ -37,6 +37,30 @@
         that: "'port 64295' in sshd_config.stdout"
         fail_msg: "sshd is not configured for port 64295"
 
+    - name: Read the static host name
+      ansible.builtin.slurp:
+        src: /etc/hostname
+      register: tpot_etc_hostname
+
+    - name: Read /etc/hosts
+      ansible.builtin.slurp:
+        src: /etc/hosts
+      register: tpot_etc_hosts
+
+    # The name is picked from upstream's word lists, so the exact value is not
+    # predictable here -- what is checked is that a valid, lowercased name was
+    # applied both statically and to the running system, and that /etc/hosts
+    # resolves it.
+    - name: Assert the host was renamed and /etc/hosts follows
+      ansible.builtin.assert:
+        that:
+          - tpot_hostname is match('^[a-z0-9][a-z0-9-]*[a-z0-9]$')
+          - ansible_facts['hostname'] == tpot_hostname
+          - "'127.0.1.1 ' ~ tpot_hostname in (tpot_etc_hosts.content | b64decode)"
+        fail_msg: "the host was not renamed to a random <adjective><noun>"
+      vars:
+        tpot_hostname: "{{ tpot_etc_hostname.content | b64decode | trim }}"
+
     - name: docker-compose.yml was generated and is valid
       ansible.builtin.command: docker compose -f docker-compose.yml config --quiet
       args:

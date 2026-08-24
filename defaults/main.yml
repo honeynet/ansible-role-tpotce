@@ -89,6 +89,16 @@ tpot_env_extra: {}
 # Pull the container images once docker-compose.yml has been generated.
 tpot_pull_images: true
 
+# Rename the host to a random <adjective><noun>, picked from the word lists
+# upstream ships in installer/install/a.txt and n.txt. Sensors that keep their
+# distribution default name are indistinguishable from one another once the
+# logs leave the box. The pick is seeded rather than re-randomised on every
+# run, so a sensor keeps the name it was given and a re-run changes nothing.
+# The seed defaults to the machine id because it survives the rename; seeding
+# from the current host name would hand out a new name every time.
+tpot_set_hostname: true
+tpot_hostname_seed: "{{ ansible_facts['machine_id'] | default(inventory_hostname, true) }}"
+
 # Upstream installs a randomized nightly reboot that prunes docker leftovers.
 # The schedule is seeded from the host name rather than being re-randomised on
 # every run: a fleet of sensors still reboots at spread out times, but an
