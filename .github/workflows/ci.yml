@@ -23,12 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: 'ansible-role-tpotce'
 
       - name: Set up Python 3
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 
@@ -61,6 +61,9 @@ jobs:
   molecule:
     name: Molecule (${{ matrix.distro }})
     runs-on: ubuntu-latest
+    # Six containers is a lot of runner time to spend on a branch that does not
+    # even lint, and a lint failure is the fastest thing to fix, so gate on it.
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
@@ -86,12 +89,12 @@ jobs:
 
     steps:
       - name: Check out the codebase
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           path: 'ansible-role-tpotce'
 
       - name: Set up Python 3
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: '3.x'
 
