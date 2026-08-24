@@ -112,11 +112,38 @@
     - "Ubuntu"
   notify: Restart SSH (All)
 
-- name: Comment out Port(s) in sshd_config, can cause port conflicts on deploy (AlmaLinux, Debian, Fedora, openSUSE Tumbleweed, Raspbian, RHEL, Rocky, Ubuntu)
+# openSUSE Tumbleweed keeps the vendor configuration in /usr/etc and has no
+# /etc/ssh/sshd_config at all; the other distributions include
+# /etc/ssh/sshd_config.d/*.conf from theirs. sshd listens on every port it is
+# given, so a port left behind in any of these files keeps getting in the way
+# of the honeypots -- and editing the one fixed path outright fails where it
+# does not exist.
+- name: Look for the files that configure sshd (All)
+  ansible.builtin.find:
+    paths:
+      - /etc/ssh
+      - /etc/ssh/sshd_config.d
+    patterns:
+      - "sshd_config"
+      - "*.conf"
+  register: tpot_sshd_config
+  when: ansible_facts['distribution'] in tpot_supported_distributions
+  tags:
+    - "AlmaLinux"
+    - "Debian"
+    - "Fedora"
+    - "openSUSE Tumbleweed"
+    - "Raspbian"
+    - "RedHat"
+    - "Rocky"
+    - "Ubuntu"
+
+- name: Comment out Port(s) other than 64295, they can cause port conflicts on deploy (All)
   ansible.builtin.replace:
-    path: /etc/ssh/sshd_config
+    path: "{{ item }}"
     regexp: '^(Port (?!64295$)[0-9]+)'
     replace: '# \1'
+  loop: "{{ tpot_sshd_config.files | default([]) | map(attribute='path') | sort }}"
   when: ansible_facts['distribution'] in tpot_supported_distributions
   tags:
     - "AlmaLinux"
