@@ -70,3 +70,11 @@
 - name: Set Hostname
   ansible.builtin.include_tasks: 14_set_hostname.yml
   when: tpot_set_hostname | bool
+
+# `Reload systemd and enable T-Pot service` is the one handler notified after
+# 07_restart_services.yml flushed, so without this it would not run until the
+# end of the play -- after every role that follows this one. Flushing here
+# keeps the role self-contained: when it returns, everything it changed has
+# been applied.
+- name: Apply pending handlers (All)
+  ansible.builtin.meta: flush_handlers

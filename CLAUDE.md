@@ -141,7 +141,9 @@ forwarding itself; with the nftables backend it refuses to start instead.
 
 Firewalld, SSH and the `tpot.service` unit are reloaded through `handlers/main.yml`, not by
 inline restart tasks as upstream does. `07_restart_services.yml` opens with
-`meta: flush_handlers`. systemd-resolved and Docker stay as ordinary tasks there — see the
+`meta: flush_handlers`, and `tasks/main.yml` closes with a second one so the unit handler
+notified by `09_setup_tpot.yml` runs before the role returns rather than at the end of the
+play, after whatever roles follow. systemd-resolved and Docker stay as ordinary tasks there — see the
 comments in that file for why.
 
 ### `.env` and the filebeat placeholder
